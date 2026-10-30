@@ -1,12 +1,12 @@
+import { attachments } from "@flaremo/db";
 import {
   getAttachmentById,
   getMemoByIdForViewer,
   getPublicArticleAttachment,
   getPublicShareByToken,
 } from "@flaremo/domain";
-import { attachments } from "@flaremo/db";
-import { and, eq, isNull } from "drizzle-orm";
 import { attachmentToDto, memoToDto, shareToDto } from "@flaremo/memos";
+import { and, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { attachmentObjectResponse } from "../attachment-http";
 import { getFlareMoDb, type HonoBindings } from "../context";
@@ -14,23 +14,41 @@ import { jsonError } from "../http";
 
 export const publicApi = new Hono<HonoBindings>();
 
-// Anonymous attachment access for public Memo RSS items. The memo visibility
-// is checked on every request, so revoked public access also revokes its images.
+// Anonymous attachment access for public Memo RSS items. The Worker checks
+// the memo's visibility before serving the attachment; the short cache limits
+// how long a previously public image can remain in a browser cache.
 publicApi.get("/memos/:memoId/attachments/:id/blob", async (c) => {
   try {
     const db = getFlareMoDb(c.env);
-    const memo = await getMemoByIdForViewer(db, null, "memos/" + c.req.param("memoId"));
-    if (memo.visibility !== "public" || memo.status !== "normal" || memo.deletedAt !== null) {
+    const memo = await getMemoByIdForViewer(
+      db,
+      null,
+      `memos/${c.req.param("memoId")}`,
+    );
+    if (
+      memo.visibility !== "public" ||
+      memo.status !== "normal" ||
+      memo.deletedAt !== null
+    ) {
       return c.json({ error: { message: "Attachment not found" } }, 404);
     }
-    const attachmentId = c.req.param("id").replace(/^attachments\//, "");
-    const attachment = await db.select().from(attachments).where(and(
-      eq(attachments.id, "attachments/" + attachmentId),
-      eq(attachments.memoId, memo.id),
-      eq(attachments.state, "ready"),
-      isNull(attachments.deletedAt),
-    )).get();
-    if (!attachment) return c.json({ error: { message: "Attachment not found" } }, 404);
+
+    const attachment = await db
+      .select()
+      .from(attachments)
+      .where(
+        and(
+          eq(attachments.id, `attachments/${c.req.param("id")}`),
+          eq(attachments.memoId, memo.id),
+          eq(attachments.state, "ready"),
+          isNull(attachments.deletedAt),
+        ),
+      )
+      .get();
+    if (!attachment) {
+      return c.json({ error: { message: "Attachment not found" } }, 404);
+    }
+
     const response = await attachmentObjectResponse({
       attachment,
       bucket: c.env.ATTACHMENTS,
@@ -39,7 +57,12 @@ publicApi.get("/memos/:memoId/attachments/:id/blob", async (c) => {
       thumbnailRequested: c.req.query("thumbnail") === "true",
       request: c.req.raw,
     });
-    if (!response) return c.json({ error: { message: "Attachment object not found" } }, 404);
+    if (!response) {
+      return c.json(
+        { error: { message: "Attachment object not found" } },
+        404,
+      );
+    }
     return response;
   } catch (error) {
     return jsonError(c, error);

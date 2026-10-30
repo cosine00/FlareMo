@@ -216,6 +216,7 @@ describe("Article page (standalone SEO HTML)", () => {
           }),
       } as Fetcher,
       FLAREMO_PUBLIC_URL: "https://flaremo.example",
+      FLAREMO_MEMO_FEED_BLOG_URL: "https://hux.ink/bb/",
       BETTER_AUTH_SECRET: "test-better-auth-secret-that-is-never-used-in-prod",
       FLAREMO_BOOTSTRAP_SECRET: "test-bootstrap-secret-never-used",
     } as Env;
@@ -351,38 +352,6 @@ describe("Article page (standalone SEO HTML)", () => {
 
   it("serves a public Memo RSS feed and excludes non-public memos", async () => {
     await seedMemoFeedRows();
-    const response = await app.fetch(new Request("https://flaremo.example/memos.xml"), env);
-    expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toContain("application/rss+xml");
-    const xml = await response.text();
-    expect(xml).toContain("公开随手记");
-    expect(xml).toContain("https://hux.ink/bb/#memo-e2e-public-memo");
-    expect(xml).toContain("https://img.hux.ink/test.webp");
-    expect(xml).toContain("https://flaremo.example/api/public/memos/e2e-public-memo/attachments/e2e-image/blob");
-    expect(xml).toContain("生活");
-    for (const secret of ["PRIVATE_SENTINEL","PROTECTED_SENTINEL","ARCHIVED_SENTINEL","COMMENT_SENTINEL"]) {
-      expect(xml).not.toContain(secret);
-    }
-    const imageUrl = "https://flaremo.example/api/public/memos/e2e-public-memo/attachments/e2e-image/blob";
-    const image = await app.fetch(new Request(imageUrl), env);
-    expect(image.status).toBe(200);
-    expect(new Uint8Array(await image.arrayBuffer())).toEqual(new Uint8Array([1,2,3]));
-    await createDb(env.DB).update(memos).set({ visibility: "private" }).where(eq(memos.id, "memos/e2e-public-memo"));
-    expect((await app.fetch(new Request(imageUrl), env)).status).toBe(404);
-  });
-
-  it("rewrites local Markdown attachment URLs but leaves image-bed URLs intact", () => {
-    const content = ["\`\`\`","![code](/file/attachments/private/photo.png)","\`\`\`",
-      "![bed](https://img.hux.ink/a.webp)",
-      "![upload](/file/attachments/image/photo.png?thumbnail=true)"].join("\n");
-    const result = rewriteMemoFileUrls(content, "memo-1", "https://flaremo.example");
-    expect(result).toContain("/file/attachments/private/photo.png");
-    expect(result).toContain("https://img.hux.ink/a.webp");
-    expect(result).toContain("https://flaremo.example/api/public/memos/memo-1/attachments/image/blob?thumbnail=true");
-  });
-
-  it("serves a public Memo RSS feed and excludes non-public memos", async () => {
-    await seedMemoFeedRows();
     const response = await app.fetch(
       new Request("https://flaremo.example/memos.xml"),
       env,
@@ -391,6 +360,7 @@ describe("Article page (standalone SEO HTML)", () => {
     expect(response.headers.get("content-type")).toContain(
       "application/rss+xml",
     );
+    expect(response.headers.get("cache-control")).toContain("max-age=300");
     const xml = await response.text();
 
     expect(xml).toContain("公开随手记");
