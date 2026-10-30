@@ -319,6 +319,11 @@ const messages = {
   "shortcuts.capture": "음성 기록 시작/중지 (/capture 페이지)",
   "composer.removeFile": "{filename} 제거",
   "composer.imageUploadFailed": "이미지 업로드 실패. 다시 시도해 주세요",
+  "editor.removeImage": "이 이미지 삭제",
+  "editor.keepImage": "이 이미지 유지",
+  "editor.imageMarkedForDeletion": "저장 시 삭제",
+  "editor.addImages": "이미지 추가",
+  "editor.attachmentDeleteFailed": "일부 이미지를 삭제하지 못했습니다. 다시 시도해 주세요",
   "attachment.unavailable":
     "파일을 불러오지 못했습니다. 삭제되었을 수 있습니다.",
   "visibility.private": "나만 보기",

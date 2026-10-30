@@ -168,6 +168,7 @@ export const MemoCard = memo(function MemoCard({
       />
       {isEditing ? (
         <MemoCardEditor
+          attachments={attachments}
           content={draftContent}
           isSaving={isSaving}
           isUploadingInline={isUploadingInline}

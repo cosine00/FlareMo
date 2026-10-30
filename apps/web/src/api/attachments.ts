@@ -125,3 +125,17 @@ export async function bindMemoAttachments(memo: string, names: string[]) {
     { method: "PATCH", body: JSON.stringify({ attachments: names }) },
   );
 }
+
+/**
+ * Deletes an attachment outright: the row goes away and the stored binary is
+ * dropped from R2 (soft-delete + finalize on the server). Takes either the
+ * bare id or the qualified name; the bare id travels in the URL without the
+ * slash-encoding wrinkle.
+ */
+export async function deleteAttachment(name: string) {
+  const id = name.startsWith("attachments/") ? name.slice("attachments/".length) : name;
+  return apiRequest<void>(
+    `/api/v1/attachments/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+  );
+}

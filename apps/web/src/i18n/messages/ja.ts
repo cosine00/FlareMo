@@ -320,6 +320,11 @@ const messages = {
   "composer.removeFile": "{filename} を削除",
   "composer.imageUploadFailed":
     "画像のアップロードに失敗しました。再試行してください",
+  "editor.removeImage": "この画像を削除",
+  "editor.keepImage": "この画像を保持",
+  "editor.imageMarkedForDeletion": "保存時に削除",
+  "editor.addImages": "画像を追加",
+  "editor.attachmentDeleteFailed": "一部の画像を削除できませんでした。再試行してください",
   "attachment.unavailable":
     "ファイルを読み込めませんでした。削除された可能性があります。",
   "visibility.private": "自分のみ",

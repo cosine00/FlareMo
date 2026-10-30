@@ -325,6 +325,11 @@ const messages = {
   "shortcuts.capture": "Iniciar o detener la grabación de voz (en /capture)",
   "composer.removeFile": "Quitar {filename}",
   "composer.imageUploadFailed": "Falló la subida de la imagen. Reintenta.",
+  "editor.removeImage": "Eliminar esta imagen",
+  "editor.keepImage": "Conservar esta imagen",
+  "editor.imageMarkedForDeletion": "Se eliminará al guardar",
+  "editor.addImages": "Añadir imágenes",
+  "editor.attachmentDeleteFailed": "No se pudieron eliminar algunas imágenes. Reintenta.",
   "attachment.unavailable":
     "El archivo no se pudo cargar; puede haber sido eliminado.",
   "visibility.private": "Solo yo",

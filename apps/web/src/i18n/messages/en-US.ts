@@ -319,6 +319,11 @@ const messages = {
   "shortcuts.capture": "Start or stop voice recording (on /capture)",
   "composer.removeFile": "Remove {filename}",
   "composer.imageUploadFailed": "Image upload failed. Try again.",
+  "editor.removeImage": "Remove this image",
+  "editor.keepImage": "Keep this image",
+  "editor.imageMarkedForDeletion": "Deleted on save",
+  "editor.addImages": "Add images",
+  "editor.attachmentDeleteFailed": "Some images could not be deleted. Try again.",
   "attachment.unavailable":
     "The file failed to load; it may have been deleted.",
   "visibility.private": "Only me",

@@ -324,6 +324,11 @@ const messages = {
   "composer.removeFile": "Убрать {filename}",
   "composer.imageUploadFailed":
     "Не удалось загрузить изображение. Повторите попытку.",
+  "editor.removeImage": "Удалить это изображение",
+  "editor.keepImage": "Оставить это изображение",
+  "editor.imageMarkedForDeletion": "Будет удалено при сохранении",
+  "editor.addImages": "Добавить изображения",
+  "editor.attachmentDeleteFailed": "Не удалось удалить некоторые изображения. Повторите попытку.",
   "attachment.unavailable": "Файл не загрузился; возможно, он был удалён.",
   "visibility.private": "Только я",
   "visibility.protected": "Команда",

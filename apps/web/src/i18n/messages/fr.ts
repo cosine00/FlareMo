@@ -327,6 +327,11 @@ const messages = {
     "Démarrer ou arrêter l'enregistrement vocal (sur /capture)",
   "composer.removeFile": "Retirer {filename}",
   "composer.imageUploadFailed": "Échec de l'envoi de l'image. Réessayez.",
+  "editor.removeImage": "Supprimer cette image",
+  "editor.keepImage": "Garder cette image",
+  "editor.imageMarkedForDeletion": "Supprimé à l'enregistrement",
+  "editor.addImages": "Ajouter des images",
+  "editor.attachmentDeleteFailed": "Certaines images n'ont pas pu être supprimées. Réessayez.",
   "attachment.unavailable":
     "Le fichier n'a pas pu être chargé ; il a peut-être été supprimé.",
   "visibility.private": "Moi uniquement",
