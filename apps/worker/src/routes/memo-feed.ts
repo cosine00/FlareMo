@@ -37,12 +37,6 @@ function memoBlogBaseUrl(env: MemoFeedEnv): string {
   }
 }
 
-function memoItemUrl(base: string, id: string): string {
-  const url = new URL(base);
-  url.hash = "memo-" + id;
-  return url.toString();
-}
-
 /**
  * Rewrite only local Markdown attachment destinations. Absolute image-bed
  * URLs (including img.hux.ink) are left untouched.
@@ -162,7 +156,9 @@ export function registerMemoFeed(app: Hono<HonoBindings>): void {
       feed.addItem({
         title,
         id: guid,
-        link: memoItemUrl(blogBaseUrl, memoId),
+        // The current Hugo Memos timeline has no per-entry anchor yet.
+        // Link to the timeline itself rather than emitting a broken fragment.
+        link: blogBaseUrl,
         description: truncate(plainText, 200),
         content: contentHtml,
         date: new Date(memo.updatedAt || memo.createdAt),
