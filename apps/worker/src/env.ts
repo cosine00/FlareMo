@@ -38,6 +38,12 @@ export type FlareMoEnv = Env & {
   FLAREMO_RECOVERY_SECRET?: string;
   FLAREMO_PUBLIC_URL?: string;
   FLAREMO_TRUSTED_ORIGINS?: string;
+  // Local customization: public image bed. `IMAGES` is an extra R2 binding
+  // (the bucket published at FLAREMO_IMAGE_BED_URL) that POST /api/v1/images
+  // writes to when a memo is public; both are optional, and the endpoint
+  // answers 503 when either is missing.
+  IMAGES?: R2Bucket;
+  FLAREMO_IMAGE_BED_URL?: string;
   // Optional Cloudflare rate-limiting binding for credential endpoints
   // (per IP) and paid ASR connection starts (per authenticated user; see
   // src/rate-limit.ts). Unbound deployments skip throttling entirely.

@@ -1,3 +1,4 @@
+import type { MemoVisibility } from "@flaremo/contracts";
 import type { Editor } from "@tiptap/react";
 import { Loader2Icon } from "lucide-react";
 import {
@@ -7,11 +8,15 @@ import {
   Suspense,
 } from "react";
 import { toast } from "sonner";
-import { uploadAttachment } from "@/api";
+import { uploadAttachment, uploadImageToBed } from "@/api";
 import { RichComposerEditor } from "@/components/rich-composer-editor-lazy";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
-import { uploadAndInsertImages } from "@/lib/rich-editor-upload";
+import {
+  attachmentImage,
+  bedImage,
+  uploadAndInsertImages,
+} from "@/lib/rich-editor-upload";
 
 type MemoCardEditorProps = {
   content: string;
@@ -23,6 +28,8 @@ type MemoCardEditorProps = {
   editorRef: RefObject<Editor | null>;
   /** Uploads bind to this memo, so a cancelled edit leaves an owned file. */
   memoName: string;
+  /** Public memos publish images to the public bed; see the upload callback. */
+  memoVisibility: MemoVisibility;
   onCancel: () => void;
   onContentChange: (content: string) => void;
   onSave: () => void;
@@ -36,6 +43,7 @@ export function MemoCardEditor({
   setIsUploadingInline,
   editorRef,
   memoName,
+  memoVisibility,
   onCancel,
   onContentChange,
   onSave,
@@ -53,7 +61,13 @@ export function MemoCardEditor({
       editorRef,
       files,
       position,
-      upload: (file) => uploadAttachment({ file, memo: memoName }),
+      upload: async (file) => {
+        if (memoVisibility === "public") {
+          const { url } = await uploadImageToBed({ file });
+          return bedImage(url, file.name);
+        }
+        return attachmentImage(await uploadAttachment({ file, memo: memoName }));
+      },
       onError: () => toast.error(t("composer.imageUploadFailed")),
     }).finally(() => setIsUploadingInline(false));
   };

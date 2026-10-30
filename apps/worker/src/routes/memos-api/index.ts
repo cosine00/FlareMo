@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { HonoBindings } from "../../context";
+import { registerImageRoutes } from "./images";
 import { registerMemosRoutes } from "./memos";
 import { registerTransferRoutes } from "./transfer";
 
@@ -13,3 +14,4 @@ export const memosApi = new Hono<HonoBindings>();
 
 registerMemosRoutes(memosApi);
 registerTransferRoutes(memosApi);
+registerImageRoutes(memosApi);

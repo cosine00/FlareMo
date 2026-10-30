@@ -1,10 +1,14 @@
 import type { Editor } from "@tiptap/react";
 import { type RefObject, useRef, useState } from "react";
 import { toast } from "sonner";
-import { uploadAttachment } from "@/api";
+import { uploadAttachment, uploadImageToBed } from "@/api";
 import { useI18n } from "@/i18n";
 import type { MemoCaptureInput } from "@/lib/local-memo-capture";
-import { uploadAndInsertImages } from "@/lib/rich-editor-upload";
+import {
+  attachmentImage,
+  bedImage,
+  uploadAndInsertImages,
+} from "@/lib/rich-editor-upload";
 
 type UseInlineImageUploadsOptions = {
   editorRef: RefObject<Editor | null>;
@@ -49,17 +53,31 @@ export function useInlineImageUploads({
       .catch(() => undefined)
       .then(async () => {
         try {
+          // Local customization: a public memo publishes its images to the
+          // public bed so the same URL works in the app, the share page and the
+          // blog. Everything else (private, team) stays in the attachment store,
+          // where reads are auth-checked.
+          const useImageBed = draftRef.current.visibility === "public";
           await uploadAndInsertImages({
             editorRef,
             files,
             position,
-            upload: (file) => uploadAttachment({ file }),
-            onUploaded: (attachment, markdown) => {
-              preuploadMarkdownRef.current.set(attachment.name, markdown);
+            upload: async (file) => {
+              if (!useImageBed) {
+                return attachmentImage(await uploadAttachment({ file }));
+              }
+              const { url } = await uploadImageToBed({ file });
+              return bedImage(url, file.name);
+            },
+            onUploaded: (image, markdown) => {
+              // Bed uploads have no attachment to bind, and adding one would
+              // make the submit reference an attachment the server never saw.
+              if (!image.attachmentName) return;
+              preuploadMarkdownRef.current.set(image.attachmentName, markdown);
               commitDraft({
                 preuploadedAttachmentNames: [
                   ...(draftRef.current.preuploadedAttachmentNames ?? []),
-                  attachment.name,
+                  image.attachmentName,
                 ],
               });
             },

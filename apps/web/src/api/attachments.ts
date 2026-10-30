@@ -95,6 +95,26 @@ export async function uploadAttachment(input: {
 }
 
 /**
+ * Local customization: uploads an image to the public image bed instead of the
+ * private attachment store, returning the URL the editor should embed. Used for
+ * memos that are not private, so a published note's pictures keep the same
+ * address everywhere (app, share page, Hugo blog) and need no rewrite on export.
+ */
+export async function uploadImageToBed(input: { file: File }): Promise<{
+  url: string;
+  key: string;
+  size: number;
+}> {
+  const file = await prepareUploadFile(input.file);
+  const formData = new FormData();
+  formData.set("file", file);
+  return apiRequest<{ url: string; key: string; size: number }>(
+    "/api/v1/images",
+    { method: "POST", body: formData },
+  );
+}
+
+/**
  * Replaces a memo's attachment binding list. Used to claim attachments that
  * were uploaded before their memo existed (inline image paste). The web
  * client's default legacy wire takes bare resource names here.

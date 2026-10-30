@@ -8,7 +8,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "./errors";
-import { createResourceId, parseResourceName } from "./ids";
+import { allocateMemoId, parseResourceName } from "./ids";
 import {
   adjustmentForNewMemo,
   hourlyCountStatements,
@@ -132,7 +132,7 @@ export async function createMemoComment(
 
   const commentId = effectiveInput.commentId
     ? parseResourceName(effectiveInput.commentId, "memos")
-    : createResourceId("memos");
+    : await allocateMemoId(db);
   const existingById = await db
     .select()
     .from(memos)

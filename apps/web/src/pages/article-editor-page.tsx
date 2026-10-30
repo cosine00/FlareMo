@@ -47,7 +47,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n";
-import { uploadAndInsertImages } from "@/lib/rich-editor-upload";
+import {
+  attachmentImage,
+  uploadAndInsertImages,
+} from "@/lib/rich-editor-upload";
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
@@ -202,7 +205,8 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
       files: images,
       onError: () => toast.error(t("article.imageUploadFailed")),
       position,
-      upload: (file) => uploadAttachment({ file, article: articleId }),
+      upload: async (file) =>
+        attachmentImage(await uploadAttachment({ file, article: articleId })),
     }).finally(() => setIsUploadingImages(false));
   };
 

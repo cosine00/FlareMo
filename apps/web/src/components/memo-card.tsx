@@ -168,6 +168,7 @@ export const MemoCard = memo(function MemoCard({
           setIsUploadingInline={setIsUploadingInline}
           editorRef={editEditorRef}
           memoName={memo.name}
+          memoVisibility={memo.visibility}
           onCancel={stopEditing}
           onContentChange={setDraftContent}
           onSave={saveEditing}

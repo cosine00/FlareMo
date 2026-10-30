@@ -4,7 +4,7 @@ import { memoRevisions, memos, memoTags } from "@flaremo/db";
 import { and, eq } from "drizzle-orm";
 import { insertEmbeddingTask } from "./embedding-outbox";
 import { ConflictError, ForbiddenError } from "./errors";
-import { createResourceId } from "./ids";
+import { allocateMemoId, createResourceId } from "./ids";
 import {
   adjustmentForMemoTransition,
   adjustmentForNewMemo,
@@ -62,7 +62,7 @@ export async function createMemo(
     has_incomplete_tasks: hasUncheckedTaskList(input.content),
   };
   const row = {
-    id: createResourceId("memos"),
+    id: await allocateMemoId(db),
     userId: user.id,
     teamId: resolveMemoTeamId(user, input.visibility),
     content: input.content,
