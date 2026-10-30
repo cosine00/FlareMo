@@ -1,1 +1,0 @@
-import{a as e}from"./vendor-react-DmxvF14L.js";import{u as t}from"./auth-HAj1zCYe.js";import{t as n}from"./verify-token-page-D8MW45vj.js";var r=e();function i({token:e}){return(0,r.jsx)(n,{invalid:`auth.verifyEmailInvalid`,queryKey:`verify-email`,success:`auth.verifyEmailSuccess`,title:`auth.verifyEmailTitle`,token:e,verify:t})}export{i as VerifyEmailPage};

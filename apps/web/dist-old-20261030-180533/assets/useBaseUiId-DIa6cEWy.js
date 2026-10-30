@@ -1,1 +1,0 @@
-import{It as e}from"./store-BTp1GrgE.js";function t(t){return e(t,`base-ui`)}export{t};

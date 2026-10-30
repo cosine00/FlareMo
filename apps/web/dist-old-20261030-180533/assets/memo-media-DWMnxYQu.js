@@ -1,1 +1,0 @@
-var e=/!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g;function t(t){let n=[];for(let r of t.matchAll(e)){let e=r[2]?.trim();e&&n.push({alt:r[1]?.trim()||void 0,src:e})}return n}function n(t){return t.replace(e,``).trim()}export{n,t};

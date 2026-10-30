@@ -1,1 +1,0 @@
-import{r as e}from"./rolldown-runtime-hePW80VL.js";import{o as t}from"./vendor-react-DmxvF14L.js";import{on as n,sn as r}from"./store-BTp1GrgE.js";var i=e(t(),1);function a(e,t){let a=i.useRef(e),o=r(t);n(()=>{a.current!==e&&o(a.current),a.current=e},[e,o])}export{a as t};

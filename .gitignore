@@ -25,3 +25,4 @@ Thumbs.db
 # 本地运维产物：数据库备份、构建残留
 .backup/
 .build-trash/
+dist-old-*/

@@ -1,1 +1,0 @@
-import{r as e}from"./rolldown-runtime-hePW80VL.js";import{n as t,o as n}from"./vendor-react-DmxvF14L.js";import{Tn as r}from"./store-BTp1GrgE.js";var i=e(n(),1),a=t();function o(e){let t=i.useCallback(t=>e===void 0?r:e.subscribeStore(t),[e]),n=i.useCallback(()=>e===void 0?void 0:e.store,[e]);return(0,a.useSyncExternalStore)(t,n,()=>e?.serverStore)}export{o as t};
