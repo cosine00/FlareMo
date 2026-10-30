@@ -95,6 +95,7 @@ export default defineConfig({
       "/file/": WORKER_PROXY,
       "/mcp": WORKER_PROXY,
       "/memory/": WORKER_PROXY,
+      "/memos.xml": WORKER_PROXY,
       "/memos.api.v1.": WORKER_PROXY,
       "/openapi.json": WORKER_PROXY,
       "/share/": WORKER_PROXY,
