@@ -61,8 +61,9 @@ export type WorkspaceHeaderRenderProps = {
 export type WorkspaceLayoutProps = {
   header: (props: WorkspaceHeaderRenderProps) => ReactNode;
   children: ReactNode;
-  mainRef?: RefObject<HTMLElement | null>;
-  onScroll?: (event: UIEvent<HTMLElement>) => void;
+  /** The scroll container, not the content column, so `scrollTo` works. */
+  mainRef?: RefObject<HTMLDivElement | null>;
+  onScroll?: (event: UIEvent<HTMLDivElement>) => void;
   /** Content column width in px; the sidebar column is added on top of it. */
   contentMaxWidth?: number;
 };
@@ -189,15 +190,16 @@ export function WorkspaceLayout({
 
   return (
     <div className="h-svh overflow-hidden bg-background">
-      {/* Sidebar + content, sized from one number: the shell must be at least
-          as wide as the content column plus the sidebar it sits beside. */}
-      <div
-        className="mx-auto flex h-full w-full"
-        style={{ maxWidth: contentMaxWidth + WORKSPACE_SIDEBAR_WIDTH }}
-      >
+      {/* Sidebar + content, centered as one composition: the sidebar holds the
+          frame's left edge (see its `shellWidth`), the content column keeps its
+          measure right beside it, and the scroll container spans the rest of
+          the window so its scrollbar sits at the window's right edge — the same
+          shell the timeline uses. */}
+      <div className="flex h-full w-full">
         <WorkspaceSidebar
           collapsed={sidebarCollapsed}
           explorer={sidebarContent}
+          shellWidth={contentMaxWidth + WORKSPACE_SIDEBAR_WIDTH}
         />
         <div className="flex h-full min-w-0 flex-1 flex-col">
           {header({
@@ -207,14 +209,19 @@ export function WorkspaceLayout({
             setMobileSheetOpen,
             explorer: sidebarContent,
           })}
-          <main
+          <div
+            className="min-h-0 flex-1 overflow-y-auto"
+            data-timeline-scroller=""
             ref={mainRef}
-            className="mx-auto min-h-0 w-full flex-1 overflow-y-auto px-5 pt-1 pb-8 lg:px-3"
             onScroll={onScroll}
-            style={{ maxWidth: contentMaxWidth }}
           >
-            {children}
-          </main>
+            <main
+              className="w-full px-5 pt-1 pb-8 lg:px-3"
+              style={{ maxWidth: contentMaxWidth }}
+            >
+              {children}
+            </main>
+          </div>
         </div>
       </div>
       <Suspense fallback={null}>

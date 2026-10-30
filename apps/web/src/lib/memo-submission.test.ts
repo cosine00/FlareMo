@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MemoCaptureInput } from "./local-memo-capture";
-import { validateMemoCaptureSubmission } from "./memo-submission";
+import {
+  splitPickedFiles,
+  validateMemoCaptureSubmission,
+} from "./memo-submission";
 import { MAX_COMPRESSION_INPUT_BYTES } from "./upload-compression";
 import {
   setAudioCompressionEnabled,
@@ -120,5 +123,36 @@ describe("validateMemoCaptureSubmission attachment sizing", () => {
     expect(validateMemoCaptureSubmission(input(many), t)).toMatchObject({
       message: "toast.tooManyAttachments",
     });
+  });
+});
+
+describe("splitPickedFiles", () => {
+  const image = (name: string) =>
+    new File([new Uint8Array(1)], name, { type: "image/webp" });
+  const pdf = (name: string) =>
+    new File([new Uint8Array(1)], name, { type: "application/pdf" });
+
+  it("routes images inline and keeps other files as attachments", () => {
+    const result = splitPickedFiles([image("a.webp"), pdf("b.pdf")], 9);
+    expect(result.images.map((file) => file.name)).toEqual(["a.webp"]);
+    expect(result.attachments.map((file) => file.name)).toEqual(["b.pdf"]);
+    expect(result.droppedImages).toBe(0);
+  });
+
+  it("drops images past the remaining room and counts them", () => {
+    const result = splitPickedFiles(
+      [image("a.webp"), image("b.webp"), pdf("c.pdf")],
+      1,
+    );
+    expect(result.images.map((file) => file.name)).toEqual(["a.webp"]);
+    expect(result.attachments.map((file) => file.name)).toEqual(["c.pdf"]);
+    expect(result.droppedImages).toBe(1);
+  });
+
+  it("treats a negative room as no room instead of dropping attachments", () => {
+    const result = splitPickedFiles([image("a.webp"), pdf("b.pdf")], -3);
+    expect(result.images).toHaveLength(0);
+    expect(result.attachments.map((file) => file.name)).toEqual(["b.pdf"]);
+    expect(result.droppedImages).toBe(1);
   });
 });

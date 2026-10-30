@@ -6,15 +6,29 @@ import {
   isValidElement,
   memo,
   type ReactElement,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  useCallback,
+  useMemo,
+  useRef,
   useState,
 } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { ImageLightbox } from "@/components/image-lightbox";
+import { MemoImageGallery } from "@/components/memo-image-gallery";
+import { MemoImageIcon } from "@/components/memo-image-icon";
 import { useI18n } from "@/i18n";
 import { createSlugger } from "@/lib/markdown-outline";
+import { markdownImages } from "@/lib/memo-media";
 import { memoTaskLines } from "@/lib/memo-tasks";
+import {
+  IMAGE_SLOT_PROPERTY,
+  rehypeAppendImageSlot,
+} from "@/lib/rehype-append-image-slot";
+import { rehypeMergeImageParagraphs } from "@/lib/rehype-merge-image-paragraphs";
 import { remarkTags, tagFromHref } from "@/lib/remark-tags";
 import {
   isTimestampHref,
@@ -51,16 +65,40 @@ type HeadingTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 type MarkdownImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt?: string;
   node?: unknown;
+  /** Opens the shared viewer; without it the image stays inert. */
+  onOpenImage?: (src: string, alt?: string) => void;
+  /**
+   * A screenshot or a portrait photo: laid out full width and cropped to its
+   * middle, so one tall capture cannot turn a note into a two-metre scroll.
+   */
+  tall?: boolean;
 };
+
+/** naturalHeight / naturalWidth above which a picture counts as tall. */
+const TALL_IMAGE_RATIO = 1.25;
 
 /**
  * Body images degrade in place: a deleted attachment would otherwise render
  * as a broken-image glyph, so a failed load swaps the element for a caption
  * placeholder carrying the alt text.
+ *
+ * A loaded image is a control onto the shared viewer — the image itself rather
+ * than a button wrapping it, because a shrink-to-fit wrapper resolves the
+ * image's `max-width: 100%` against its own content and collapses it.
  */
-function MarkdownImage({ alt, node: _node, ...props }: MarkdownImageProps) {
+function MarkdownImage({
+  alt,
+  node: _node,
+  onOpenImage,
+  tall: tallHint,
+  ...props
+}: MarkdownImageProps) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
+  // Dimensions are only known once the bytes arrive (unless the caller could
+  // read them off the attachment), so the crop is decided on load.
+  const [tall, setTall] = useState(Boolean(tallHint));
+  const src = typeof props.src === "string" ? props.src : undefined;
 
   if (failed) {
     return (
@@ -69,13 +107,45 @@ function MarkdownImage({ alt, node: _node, ...props }: MarkdownImageProps) {
       </span>
     );
   }
+
   return (
     <img
       {...props}
       alt={alt ?? ""}
+      className={cn(props.className, tall && "memo-image-tall")}
+      data-memo-image=""
       decoding="async"
       loading="lazy"
       onError={() => setFailed(true)}
+      onLoad={(event) => {
+        const element = event.currentTarget;
+        if (element.naturalWidth > 0) {
+          setTall(
+            element.naturalHeight / element.naturalWidth > TALL_IMAGE_RATIO,
+          );
+        }
+      }}
+      {...(onOpenImage
+        ? {
+            "aria-label": alt?.trim() ? alt : t("imageViewer.open"),
+            onClick: (event: ReactMouseEvent<HTMLImageElement>) => {
+              // The card body is a click target of its own; opening the viewer
+              // must not also open the note.
+              event.preventDefault();
+              event.stopPropagation();
+              onOpenImage(src ?? "", alt);
+            },
+            onKeyDown: (event: ReactKeyboardEvent<HTMLImageElement>) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              event.stopPropagation();
+              onOpenImage(src ?? "", alt);
+            },
+            role: "button",
+            tabIndex: 0,
+            title: t("imageViewer.open"),
+          }
+        : {})}
     />
   );
 }
@@ -99,12 +169,47 @@ function isCheckbox(
   );
 }
 
+type HastLike = {
+  children?: HastLike[];
+  properties?: Record<string, unknown>;
+  tagName?: string;
+  type: string;
+  value?: string;
+};
+
+/**
+ * The images of a paragraph that holds nothing else. Two or more of them are a
+ * gallery — the rehype pass has already collapsed adjacent picture-only
+ * paragraphs into one, so this is the single place the decision is made.
+ */
+function paragraphImages(node: HastLike | undefined): {
+  alt?: string;
+  src: string;
+}[] {
+  const children = node?.children ?? [];
+  const images: { alt?: string; src: string }[] = [];
+  for (const child of children) {
+    if (child.type === "text" && !child.value?.trim()) continue;
+    if (child.type !== "element") return [];
+    if (child.tagName === "br") continue;
+    if (child.tagName !== "img") return [];
+    const src = child.properties?.src;
+    if (typeof src !== "string" || src === "") return [];
+    const alt = child.properties?.alt;
+    images.push({ alt: typeof alt === "string" && alt ? alt : undefined, src });
+  }
+  return images;
+}
+
+/** Pictures referenced by a Markdown body, in reading order. */
 export const MemoContent = memo(function MemoContent({
   className,
   content,
   onTimestampClick,
   withHeadingIds = false,
   interactiveTaskLists = false,
+  imageMode = "full",
+  iconImages,
   resolveImageDimensions,
   onToggleTask,
   onConvertTask,
@@ -133,6 +238,18 @@ export const MemoContent = memo(function MemoContent({
    */
   interactiveTaskLists?: boolean;
   /**
+   * "full" renders body pictures in place (single pictures inline, runs of
+   * them as a justified band). "icon" drops them for one inline glyph — the
+   * dense timeline rail, where a screenshot per note would bury the text.
+   */
+  imageMode?: "full" | "icon";
+  /**
+   * Pictures that live beside the body rather than in it — uploaded
+   * attachments. Icon mode counts them in the same glyph; the other modes
+   * leave them to the attachment gallery.
+   */
+  iconImages?: { alt?: string; src: string }[];
+  /**
    * Maps a body image's src to its attachment's intrinsic dimensions so the
    * rendered box is reserved before the bytes load (no layout shift).
    */
@@ -146,9 +263,61 @@ export const MemoContent = memo(function MemoContent({
   rehypePlugins?: import("unified").Pluggable[];
 } & TaskInteraction) {
   const { t } = useI18n();
+  // One viewer per note: every body image routes through here, so a card with a
+  // dozen screenshots still mounts a single dialog. The list is read back off
+  // the rendered note, which keeps prev/next in the same order the reader sees
+  // — galleries, inline pictures and all.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<{
+    images: { alt?: string; src: string }[];
+    index: number;
+  } | null>(null);
   // Transcript bodies rewrite clock markers into `#flaremo-t=` links before
   // parsing; prose without markers passes through untouched.
   const body = onTimestampClick ? toTimestampHrefMarkdown(content) : content;
+  // Every picture the note mentions, in reading order. Icon mode needs it to
+  // count and open them; the other modes only fall back to it for the viewer's
+  // prev/next list when the rendered note has no picture element to read.
+  const noteImages = useMemo(() => markdownImages(body), [body]);
+  // Icon mode folds the note's attachments in as well: the glyph speaks for
+  // every picture the note holds, whether it was written into the body or
+  // uploaded alongside it.
+  const inlineImages = useMemo(
+    () => (imageMode === "icon" ? [...noteImages, ...(iconImages ?? [])] : []),
+    [iconImages, imageMode, noteImages],
+  );
+
+  const openPreview = useCallback(
+    (src: string, alt?: string) => {
+      const rendered = containerRef.current
+        ? Array.from(
+            containerRef.current.querySelectorAll<HTMLImageElement>(
+              "img[data-memo-image]",
+            ),
+          )
+        : [];
+      const images =
+        rendered.length > 0
+          ? rendered
+              .map((element) => ({
+                alt: element.alt || undefined,
+                src: element.getAttribute("src") ?? "",
+              }))
+              .filter((image) => image.src !== "")
+          : // Icon mode strips the pictures from the body, so the viewer's set
+            // comes from the markdown itself — otherwise every note would open
+            // a one-picture viewer with no way to reach the rest.
+            inlineImages.length > 0
+            ? inlineImages
+            : noteImages;
+      const index = images.findIndex((image) => image.src === src);
+      setPreview({
+        images: images.length > 0 ? images : [{ alt, src }],
+        index: Math.max(0, index),
+      });
+    },
+    [inlineImages, noteImages],
+  );
   const slug = withHeadingIds ? createSlugger() : undefined;
   const interactiveTasks = Boolean(onToggleTask || onConvertTask);
 
@@ -173,9 +342,44 @@ export const MemoContent = memo(function MemoContent({
     };
 
   return (
-    <div className={cn("memo-markdown text-[15px] leading-7", className)}>
+    <div
+      className={cn("memo-markdown text-[15px] leading-7", className)}
+      ref={containerRef}
+    >
       <Markdown
         components={{
+          p({ children, node, ...props }) {
+            const images = paragraphImages(node as HastLike | undefined);
+            if (imageMode === "icon") {
+              // Every picture is collapsed into the single glyph below the
+              // body, so an image-only paragraph must not leave an empty line
+              // behind. Paragraphs that do carry text keep it.
+              if (images.length > 0 && nodeText(children).trim() === "") {
+                return null;
+              }
+              return <p {...props}>{children}</p>;
+            }
+            // Two pictures or more become one justified band; a lone picture
+            // stays a paragraph so it keeps the reader's full column width.
+            if (images.length > 1) {
+              return (
+                <MemoImageGallery images={images} onOpenImage={openPreview} />
+              );
+            }
+            return <p {...props}>{children}</p>;
+          },
+          span({ node, children, ...props }) {
+            // The marker rehypeAppendImageSlot planted at the end of the last
+            // line of prose: the whole note's pictures, folded into one glyph
+            // that trails the text instead of taking a line of its own.
+            const properties = (node as HastLike | undefined)?.properties;
+            if (properties && IMAGE_SLOT_PROPERTY in properties) {
+              return (
+                <MemoImageIcon images={inlineImages} onOpen={openPreview} />
+              );
+            }
+            return <span {...props}>{children}</span>;
+          },
           a({ href, children, node: _node, ...props }) {
             const tag = tagFromHref(href);
             if (tag !== null) {
@@ -254,12 +458,20 @@ export const MemoContent = memo(function MemoContent({
             return <input {...props} readOnly type="checkbox" />;
           },
           img({ node: _node, ...props }) {
+            // Icon mode collapses every picture into one glyph rendered after
+            // the body; the inline ones simply step aside.
+            if (imageMode === "icon") return null;
             const dimensions = resolveImageDimensions?.(
               typeof props.src === "string" ? props.src : "",
             );
             return (
               <MarkdownImage
                 {...props}
+                tall={
+                  dimensions
+                    ? dimensions.height / dimensions.width > TALL_IMAGE_RATIO
+                    : undefined
+                }
                 {...(dimensions
                   ? {
                       width: dimensions.width,
@@ -269,6 +481,7 @@ export const MemoContent = memo(function MemoContent({
                       },
                     }
                   : {})}
+                onOpenImage={openPreview}
               />
             );
           },
@@ -334,12 +547,26 @@ export const MemoContent = memo(function MemoContent({
             );
           },
         }}
-        rehypePlugins={rehypePlugins}
+        rehypePlugins={[
+          ...(rehypePlugins ?? []),
+          rehypeMergeImageParagraphs,
+          ...(inlineImages.length > 0 ? [rehypeAppendImageSlot] : []),
+        ]}
         remarkPlugins={[remarkGfm, remarkBreaks, remarkTags]}
         skipHtml
       >
         {body}
       </Markdown>
+      {preview && (
+        <ImageLightbox
+          images={preview.images}
+          index={preview.index}
+          open
+          onOpenChange={(open) => {
+            if (!open) setPreview(null);
+          }}
+        />
+      )}
     </div>
   );
 });

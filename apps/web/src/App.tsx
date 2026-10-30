@@ -29,6 +29,11 @@ import { useWorkspaceQueries } from "@/hooks/use-workspace-queries";
 import { useWorkspaceShortcuts } from "@/hooks/use-workspace-shortcuts";
 import { useI18n } from "@/i18n";
 import { focusComposerInput } from "@/lib/composer-focus";
+import {
+  readTimelineLayout,
+  type TimelineLayout,
+  writeTimelineLayout,
+} from "@/lib/timeline-layout";
 import { AppRoutes } from "@/router-tree";
 import { indexRoute, registerWorkspaceComponent } from "@/routes/index-route";
 
@@ -70,7 +75,12 @@ export function FlareMoApp() {
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
   );
   const mobileSearchRef = useRef<HTMLInputElement>(null);
-  const mainRef = useRef<HTMLElement | null>(null);
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const [layout, setLayoutState] = useState<TimelineLayout>(readTimelineLayout);
+  const setLayout = useCallback((next: TimelineLayout) => {
+    setLayoutState(next);
+    writeTimelineLayout(next);
+  }, []);
   const [isTimelineScrolled, setIsTimelineScrolled] = useState(false);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -102,7 +112,6 @@ export function FlareMoApp() {
 
   const {
     attachmentsByMemo,
-    canPublishTeam,
     captureStatusQuery,
     currentUserQuery,
     displayedMemos,
@@ -273,7 +282,11 @@ export function FlareMoApp() {
 
   return (
     <div className="h-svh overflow-hidden bg-background">
-      <div className="mx-auto flex h-full w-full max-w-[950px]">
+      {/* Page-thirds shell: the explorer holds a third of the window, the
+          timeline the other two. The scroll container spans the whole right
+          column so its scrollbar sits at the window edge, while `main` keeps
+          the content at a readable measure inside it. */}
+      <div className="flex h-full w-full">
         <WorkspaceSidebar
           collapsed={sidebarCollapsed}
           explorer={sidebarContent}
@@ -283,7 +296,9 @@ export function FlareMoApp() {
             activeQuery={dayFilter ? "" : query}
             explorer={sidebarContent}
             isTimelineScrolled={isTimelineScrolled}
+            layout={layout}
             mobileSheetOpen={mobileSheetOpen}
+            setLayout={setLayout}
             setMobileSheetOpen={setMobileSheetOpen}
             setQuery={setQuery}
             setSpace={setSpace}
@@ -295,9 +310,10 @@ export function FlareMoApp() {
             toggleSidebarCollapsed={toggleSidebarCollapsed}
             view={view}
           />
-          <main
+          <div
             ref={mainRef}
-            className="mx-auto min-h-0 w-full max-w-[640px] flex-1 overflow-y-auto px-5 pt-1 pb-8 lg:px-3"
+            className="min-h-0 flex-1 overflow-y-auto"
+            data-timeline-scroller=""
             onScroll={(event) => {
               const top = event.currentTarget.scrollTop;
               const scrolled = top > 4;
@@ -308,180 +324,191 @@ export function FlareMoApp() {
               setShowScrollToTop((prev) => (prev === showTop ? prev : showTop));
             }}
           >
-            <WorkspaceSearch
-              className="mb-3 md:hidden motion-safe:animate-rise"
-              inputRef={mobileSearchRef}
-              onToggleSemantic={semanticEnabled ? toggleSemantic : undefined}
-              query={dayFilter ? "" : query}
-              semanticMode={semanticMode}
-              semanticPending={vectorUsageQuery.isPending}
-              onQueryChange={setQuery}
-              isPending={isUpdating}
-            />
-            <div className="flex flex-col gap-3">
-              {teamExpired && (
-                <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground motion-safe:animate-rise">
-                  <EyeIcon aria-hidden="true" className="size-3.5 shrink-0" />
-                  {t("space.expiredNotice")}
-                </div>
-              )}
-              {isReader && space === "team" && (
-                <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground motion-safe:animate-rise">
-                  <EyeIcon aria-hidden="true" className="size-3.5 shrink-0" />
-                  {t("space.readonlyNotice")}
-                </div>
-              )}
-              <WorkspaceComposer
-                visible={view === "all" && !(isReader && space === "team")}
-                composeRequested={composeRequested}
-                space={space}
-                hasTeam={canPublishTeam}
-                tags={stats.tags}
-                captureAvailable={Boolean(captureStatusQuery.data?.available)}
+            <main
+              className="w-full px-5 pt-1 pb-8 lg:px-6"
+              // The reading measure is the shell's original one (640), and the
+              // column hugs the sidebar the way the old centered shell sat:
+              // explorer 312 + notes 640, side by side. The scroller still
+              // spans the window so its scrollbar stays at the right edge —
+              // the leftover width simply collects on the right. The rail eats
+              // 28px of the timeline's padding, which is what it adds back.
+              style={{ maxWidth: layout === "timeline" ? 672 : 640 }}
+            >
+              <WorkspaceSearch
+                className="mb-3 md:hidden motion-safe:animate-rise"
+                inputRef={mobileSearchRef}
+                onToggleSemantic={semanticEnabled ? toggleSemantic : undefined}
+                query={dayFilter ? "" : query}
+                semanticMode={semanticMode}
+                semanticPending={vectorUsageQuery.isPending}
+                onQueryChange={setQuery}
+                isPending={isUpdating}
               />
-              {hasFilters && (
-                <WorkspaceFilterChips
-                  activeTag={activeTag}
-                  clearFilters={clearFilters}
-                  dayFilter={dayFilter}
-                  hasFilters={hasFilters}
-                  isSemanticSearch={isSemanticSearch}
-                  query={query}
-                  setActiveTag={setActiveTag}
-                  setQuery={setQuery}
-                  setUntagged={setUntagged}
-                  untagged={untagged}
-                />
-              )}
-              {isSemanticSearch && semanticResultsQuery.data?.degraded ? (
-                <p className="mb-3 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                  {t("search.semanticDegraded")}
-                </p>
-              ) : null}
-              {keywordSearch && matchingTasks.length > 0 && (
-                <TaskSearchResults tasks={matchingTasks} />
-              )}
-              {showOnThisDayBanner && (
-                <Link
-                  className="mb-3 flex items-center gap-2.5 rounded-xl border border-brand-300/40 bg-brand-50/50 px-3.5 py-2.5 text-sm text-foreground motion-safe:animate-rise motion-safe:transition-[background-color,border-color] motion-safe:duration-150 hover:bg-brand-50 dark:border-brand-400/25 dark:bg-brand-400/5 dark:hover:bg-brand-400/10"
-                  data-testid="on-this-day-banner"
-                  to="/review/daily"
-                >
-                  <CalendarDaysIcon className="shrink-0 text-brand-500 dark:text-brand-400" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {t("review.onThisDayBanner", {
-                      count: onThisDayQuery.data?.memos.length ?? 0,
-                    })}
-                  </span>
-                  <ChevronRightIcon className="shrink-0 text-muted-foreground" />
-                </Link>
-              )}
-              {semanticEnabled &&
-                !isSemanticSearch &&
-                !dayFilter &&
-                searchQuery &&
-                displayedMemos.length === 0 &&
-                !memosQuery.isLoading &&
-                !memosQuery.isFetchingNextPage &&
-                !memosQuery.isError && (
-                  <div className="mb-3 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground motion-safe:animate-rise">
-                    <SparklesIcon className="size-3.5 shrink-0" />
-                    <span className="min-w-0 flex-1">
-                      {t("search.noResultsHint")}
-                    </span>
-                    <Button
-                      className="h-7 px-2 text-xs"
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                      onClick={toggleSemantic}
-                    >
-                      {t("search.semanticToggle")}
-                    </Button>
+              <div className="flex flex-col gap-3">
+                {teamExpired && (
+                  <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground motion-safe:animate-rise">
+                    <EyeIcon aria-hidden="true" className="size-3.5 shrink-0" />
+                    {t("space.expiredNotice")}
                   </div>
                 )}
-              <MemoList
-                attachmentsByMemo={attachmentsByMemo}
-                emptyDescription={
-                  isSemanticSearch
-                    ? t("search.semanticEmpty")
-                    : hasFilters
-                      ? t("list.filteredEmptyDescription")
-                      : view === "archived"
-                        ? t("list.archiveEmptyDescription")
-                        : view === "trashed"
-                          ? t("list.trashEmptyDescription")
-                          : undefined
-                }
-                hasError={
-                  isSemanticSearch
-                    ? semanticResultsQuery.isError
-                    : memosQuery.isError
-                }
-                hasNextPage={
-                  isSemanticSearch ? false : Boolean(memosQuery.hasNextPage)
-                }
-                isFetchingNextPage={
-                  isSemanticSearch ? false : memosQuery.isFetchingNextPage
-                }
-                isLoading={
-                  isSemanticSearch
-                    ? semanticResultsQuery.isLoading
-                    : memosQuery.isLoading
-                }
-                memos={displayedMemos}
-                focusedMemoId={
-                  focusedMemoIndex !== null
-                    ? displayedMemos[focusedMemoIndex]?.id ||
-                      displayedMemos[focusedMemoIndex]?.name
-                    : null
-                }
-                searchQuery={searchQuery || undefined}
-                sharesByMemo={sharesByMemo}
-                onArchive={handleArchive}
-                onHardDelete={handleHardDelete}
-                onLoadMore={handleLoadMore}
-                onPin={handlePin}
-                onRestore={restoreMemo}
-                onRetry={handleRetry}
-                onRevokeShare={handleRevokeShare}
-                onShare={shareMemo}
-                onTagClick={setActiveTag}
-                onTrash={trashMemo}
-                onUpdate={handleUpdate}
-                onClearFilters={hasFilters ? clearFilters : undefined}
-                isUpdating={isUpdating}
-                isPaginationError={!isSemanticSearch && isFetchNextPageError}
-                isRetrying={
-                  isSemanticSearch
-                    ? semanticResultsQuery.isFetching
-                    : memosQuery.isFetching
-                }
-                emptyTitle={
-                  hasFilters
-                    ? t("list.filteredEmptyTitle")
-                    : view === "all"
-                      ? t("list.emptyTitle")
-                      : view === "archived"
-                        ? t("list.archiveEmptyTitle")
-                        : t("list.trashEmptyTitle")
-                }
-              />
-              {showScrollToTop && (
-                <Button
-                  aria-label={t("common.scrollToTop")}
-                  className="fixed bottom-6 right-6 z-30 size-9 rounded-full border border-border/60 bg-background/85 p-0 text-muted-foreground shadow-sm backdrop-blur-md hover:bg-muted hover:text-foreground active:scale-95 motion-safe:animate-scale-in motion-safe:transition-all sm:right-8"
-                  size="icon"
-                  title={t("common.scrollToTop")}
-                  type="button"
-                  variant="outline"
-                  onClick={scrollToTop}
-                >
-                  <ArrowUpIcon className="size-4" />
-                </Button>
-              )}
-            </div>
-          </main>
+                {isReader && space === "team" && (
+                  <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground motion-safe:animate-rise">
+                    <EyeIcon aria-hidden="true" className="size-3.5 shrink-0" />
+                    {t("space.readonlyNotice")}
+                  </div>
+                )}
+                <WorkspaceComposer
+                  visible={view === "all" && !(isReader && space === "team")}
+                  composeRequested={composeRequested}
+                  space={space}
+                  tags={stats.tags}
+                  captureAvailable={Boolean(captureStatusQuery.data?.available)}
+                />
+                {hasFilters && (
+                  <WorkspaceFilterChips
+                    activeTag={activeTag}
+                    clearFilters={clearFilters}
+                    dayFilter={dayFilter}
+                    hasFilters={hasFilters}
+                    isSemanticSearch={isSemanticSearch}
+                    query={query}
+                    setActiveTag={setActiveTag}
+                    setQuery={setQuery}
+                    setUntagged={setUntagged}
+                    untagged={untagged}
+                  />
+                )}
+                {isSemanticSearch && semanticResultsQuery.data?.degraded ? (
+                  <p className="mb-3 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    {t("search.semanticDegraded")}
+                  </p>
+                ) : null}
+                {keywordSearch && matchingTasks.length > 0 && (
+                  <TaskSearchResults tasks={matchingTasks} />
+                )}
+                {showOnThisDayBanner && (
+                  <Link
+                    className="mb-3 flex items-center gap-2.5 rounded-xl border border-brand-300/40 bg-brand-50/50 px-3.5 py-2.5 text-sm text-foreground motion-safe:animate-rise motion-safe:transition-[background-color,border-color] motion-safe:duration-150 hover:bg-brand-50 dark:border-brand-400/25 dark:bg-brand-400/5 dark:hover:bg-brand-400/10"
+                    data-testid="on-this-day-banner"
+                    to="/review/daily"
+                  >
+                    <CalendarDaysIcon className="shrink-0 text-brand-500 dark:text-brand-400" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t("review.onThisDayBanner", {
+                        count: onThisDayQuery.data?.memos.length ?? 0,
+                      })}
+                    </span>
+                    <ChevronRightIcon className="shrink-0 text-muted-foreground" />
+                  </Link>
+                )}
+                {semanticEnabled &&
+                  !isSemanticSearch &&
+                  !dayFilter &&
+                  searchQuery &&
+                  displayedMemos.length === 0 &&
+                  !memosQuery.isLoading &&
+                  !memosQuery.isFetchingNextPage &&
+                  !memosQuery.isError && (
+                    <div className="mb-3 flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground motion-safe:animate-rise">
+                      <SparklesIcon className="size-3.5 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        {t("search.noResultsHint")}
+                      </span>
+                      <Button
+                        className="h-7 px-2 text-xs"
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                        onClick={toggleSemantic}
+                      >
+                        {t("search.semanticToggle")}
+                      </Button>
+                    </div>
+                  )}
+                <MemoList
+                  attachmentsByMemo={attachmentsByMemo}
+                  layout={layout}
+                  emptyDescription={
+                    isSemanticSearch
+                      ? t("search.semanticEmpty")
+                      : hasFilters
+                        ? t("list.filteredEmptyDescription")
+                        : view === "archived"
+                          ? t("list.archiveEmptyDescription")
+                          : view === "trashed"
+                            ? t("list.trashEmptyDescription")
+                            : undefined
+                  }
+                  hasError={
+                    isSemanticSearch
+                      ? semanticResultsQuery.isError
+                      : memosQuery.isError
+                  }
+                  hasNextPage={
+                    isSemanticSearch ? false : Boolean(memosQuery.hasNextPage)
+                  }
+                  isFetchingNextPage={
+                    isSemanticSearch ? false : memosQuery.isFetchingNextPage
+                  }
+                  isLoading={
+                    isSemanticSearch
+                      ? semanticResultsQuery.isLoading
+                      : memosQuery.isLoading
+                  }
+                  memos={displayedMemos}
+                  focusedMemoId={
+                    focusedMemoIndex !== null
+                      ? displayedMemos[focusedMemoIndex]?.id ||
+                        displayedMemos[focusedMemoIndex]?.name
+                      : null
+                  }
+                  searchQuery={searchQuery || undefined}
+                  sharesByMemo={sharesByMemo}
+                  onArchive={handleArchive}
+                  onHardDelete={handleHardDelete}
+                  onLoadMore={handleLoadMore}
+                  onPin={handlePin}
+                  onRestore={restoreMemo}
+                  onRetry={handleRetry}
+                  onRevokeShare={handleRevokeShare}
+                  onShare={shareMemo}
+                  onTagClick={setActiveTag}
+                  onTrash={trashMemo}
+                  onUpdate={handleUpdate}
+                  onClearFilters={hasFilters ? clearFilters : undefined}
+                  isUpdating={isUpdating}
+                  isPaginationError={!isSemanticSearch && isFetchNextPageError}
+                  isRetrying={
+                    isSemanticSearch
+                      ? semanticResultsQuery.isFetching
+                      : memosQuery.isFetching
+                  }
+                  emptyTitle={
+                    hasFilters
+                      ? t("list.filteredEmptyTitle")
+                      : view === "all"
+                        ? t("list.emptyTitle")
+                        : view === "archived"
+                          ? t("list.archiveEmptyTitle")
+                          : t("list.trashEmptyTitle")
+                  }
+                />
+                {showScrollToTop && (
+                  <Button
+                    aria-label={t("common.scrollToTop")}
+                    className="fixed bottom-6 right-6 z-30 size-9 rounded-full border border-border/60 bg-background/85 p-0 text-muted-foreground shadow-sm backdrop-blur-md hover:bg-muted hover:text-foreground active:scale-95 motion-safe:animate-scale-in motion-safe:transition-all sm:right-8"
+                    size="icon"
+                    title={t("common.scrollToTop")}
+                    type="button"
+                    variant="outline"
+                    onClick={scrollToTop}
+                  >
+                    <ArrowUpIcon className="size-4" />
+                  </Button>
+                )}
+              </div>
+            </main>
+          </div>
         </div>
       </div>
       <Suspense fallback={null}>

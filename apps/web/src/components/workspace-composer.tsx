@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { MemoSpace } from "@/api";
+import { createShare } from "@/api";
 import { MemoComposer } from "@/components/memo-composer";
 import { useMemoMutations } from "@/hooks/use-memo-mutations";
 import { useNewMemoCapture } from "@/hooks/use-new-memo-capture";
@@ -30,10 +31,13 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 import { stripResourceName } from "@/lib/utils";
 
-// The composer's send target defaults to the active space ("归属在创建时决定").
-// An explicit pick is remembered per space so a member who publishes to the
-// team keeps that habit without re-selecting on every visit.
+// Local customization: this account publishes to the open web by default, so the
+// composer starts on "public" and a fresh note needs no extra click. Picking
+// personal/team is a one-shot override for that single note — it is deliberately
+// not remembered — and the next note is public again. Only "public" is ever
+// stored, so the account default cannot drift.
 const VISIBILITY_PREF_KEY = "flaremo.composer.visibility";
+const DEFAULT_COMPOSER_VISIBILITY: MemoVisibility = "public";
 
 type VisibilityPref = Partial<Record<MemoSpace, MemoVisibility>>;
 
@@ -41,7 +45,16 @@ function readVisibilityPref(): VisibilityPref {
   try {
     const raw = localStorage.getItem(VISIBILITY_PREF_KEY);
     const parsed = raw ? (JSON.parse(raw) as VisibilityPref) : null;
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    // Drop anything an earlier build remembered (private/protected): those were
+    // "sticky picks", the opposite of what this account wants.
+    const pref: VisibilityPref = {};
+    for (const [space, visibility] of Object.entries(parsed)) {
+      if (visibility === DEFAULT_COMPOSER_VISIBILITY) {
+        pref[space as MemoSpace] = visibility;
+      }
+    }
+    return pref;
   } catch {
     return {};
   }
@@ -62,14 +75,12 @@ export const WorkspaceComposer = memo(function WorkspaceComposer({
   visible,
   composeRequested,
   space,
-  hasTeam,
   tags,
   captureAvailable,
 }: {
   visible: boolean;
   composeRequested: boolean;
   space: MemoSpace;
-  hasTeam: boolean;
   tags?: Array<{ name: string; count: number }>;
   captureAvailable?: boolean;
 }) {
@@ -78,9 +89,8 @@ export const WorkspaceComposer = memo(function WorkspaceComposer({
   const [newMemoDraftId] = useState(getNewMemoDraftId);
   const [visibilityPref, setVisibilityPref] =
     useState<VisibilityPref>(readVisibilityPref);
-  const spaceDefault: MemoVisibility =
-    hasTeam && space === "team" ? "protected" : "private";
-  const preferredVisibility = visibilityPref[space] ?? spaceDefault;
+  const preferredVisibility =
+    visibilityPref[space] ?? DEFAULT_COMPOSER_VISIBILITY;
   const capture = useNewMemoCapture({
     draftId: newMemoDraftId,
     initialVisibility: preferredVisibility,
@@ -94,6 +104,17 @@ export const WorkspaceComposer = memo(function WorkspaceComposer({
   const createMemoAndSchedule = useCallback(
     async (submission: MemoCaptureInput) => {
       const memo = await createMemoAsync(submission);
+      // Local customization: a memo published as public gets its share link
+      // right away, matching what the visibility dialog does when you flip an
+      // existing memo to public. Best-effort on purpose — the note is already
+      // saved, so a share failure must not turn the send into an error.
+      if (submission.visibility === "public") {
+        try {
+          await createShare(memo.name);
+        } catch {
+          toast.error(t("toast.requestFailed"));
+        }
+      }
       if (!submission.schedule) return { memo, message: t("toast.saved") };
       try {
         const count = await fileScheduledTasks(
@@ -291,11 +312,15 @@ export const WorkspaceComposer = memo(function WorkspaceComposer({
     <MemoComposer
       draft={capture.draft}
       isPending={isCreatingMemo || isCaptureSubmissionPending}
-      showVisibility={hasTeam}
+      showVisibility
       tags={tags}
       captureAvailable={captureAvailable}
       onDraftChange={capture.updateDraft}
       onVisibilityChange={(visibility) => {
+        // Only "public" is the remembered default. A personal/team pick applies
+        // to this note alone, so the next note starts public again; re-picking
+        // public just re-confirms the default.
+        if (visibility !== DEFAULT_COMPOSER_VISIBILITY) return;
         setVisibilityPref((current) => {
           const next = { ...current, [space]: visibility };
           writeVisibilityPref(next);

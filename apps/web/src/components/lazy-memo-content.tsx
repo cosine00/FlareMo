@@ -44,6 +44,8 @@ export const LazyMemoContent = memo(function LazyMemoContent({
   onTimestampClick,
   withHeadingIds,
   interactiveTaskLists,
+  imageMode,
+  iconImages,
   resolveImageDimensions,
   onToggleTask,
   onConvertTask,
@@ -55,6 +57,10 @@ export const LazyMemoContent = memo(function LazyMemoContent({
   onTimestampClick?: (seconds: number) => void;
   withHeadingIds?: boolean;
   interactiveTaskLists?: boolean;
+  /** Inline pictures or one collapsed icon; see MemoContent. */
+  imageMode?: "full" | "icon";
+  /** Pictures held as attachments; icon mode counts them too. */
+  iconImages?: { alt?: string; src: string }[];
   resolveImageDimensions?: (
     src: string,
   ) => { width: number; height: number } | undefined;
@@ -76,6 +82,8 @@ export const LazyMemoContent = memo(function LazyMemoContent({
         <MarkdownMemoContent
           className={className}
           content={content}
+          iconImages={iconImages}
+          imageMode={imageMode}
           interactiveTaskLists={interactiveTaskLists}
           onTagClick={onTagClick}
           onTimestampClick={onTimestampClick}

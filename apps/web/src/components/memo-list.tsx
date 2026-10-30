@@ -42,6 +42,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n";
 import { getMemoResourceId } from "@/lib/memo";
+import type { TimelineLayout } from "@/lib/timeline-layout";
 import { MemoCard } from "./memo-card";
 
 // The share-image dialog pulls in html-to-image and the plugin card registry;
@@ -80,6 +81,8 @@ type MemoListProps = {
   isRetrying?: boolean;
   isPaginationError?: boolean;
   memos: Memo[];
+  /** Card stack (default) or the dated archive-style list. */
+  layout?: TimelineLayout;
   attachmentsByMemo: Map<string, Attachment[]>;
   sharesByMemo: Map<string, Share>;
   searchQuery?: string;
@@ -194,7 +197,10 @@ function VirtualizedCards({
   // biome-ignore lint/correctness/useExhaustiveDependencies: listRef is a ref (its identity never changes) and `memos.length` is the deliberate re-measure trigger, not a value the effect reads.
   useLayoutEffect(() => {
     const element = listRef.current;
-    const parent = element?.closest<HTMLElement>("main") ?? null;
+    const parent =
+      element?.closest<HTMLElement>("[data-timeline-scroller]") ??
+      element?.closest<HTMLElement>("main") ??
+      null;
     setScroller(parent);
     if (element && parent) {
       // Distance from the scroll container's content origin to this list. The
@@ -325,6 +331,7 @@ export const MemoList = memo(function MemoList({
   hasError,
   hasNextPage,
   isFetchingNextPage,
+  layout = "cards",
   memos,
   attachmentsByMemo,
   sharesByMemo,
@@ -490,6 +497,40 @@ export const MemoList = memo(function MemoList({
     </Alert>
   ) : null;
 
+  // One card shape, three containers: the rail, the virtualized stack and the
+  // plain stack. `imageMode` is the only difference between them.
+  const renderCard = (
+    memo: Memo,
+    index: number,
+    imageMode: "full" | "icon" = "full",
+  ) => (
+    <MemoCard
+      attachments={attachmentsByMemo.get(memo.name) ?? EMPTY_ATTACHMENTS}
+      canManage={memo.can_manage === true}
+      canGovern={memo.can_govern === true}
+      imageMode={imageMode}
+      index={index}
+      isFocused={focusedMemoId === (memo.id || memo.name)}
+      key={memo.name}
+      memo={memo}
+      onArchive={onArchive}
+      onEditingChange={handleEditingChange}
+      onHardDelete={onHardDelete}
+      onPin={onPin}
+      onRequestDelete={setDeleteTargetMemo}
+      onRequestShareImage={setShareImageMemo}
+      onRequestVisibility={setVisibilityMemo}
+      onRestore={onRestore}
+      onRevokeShare={onRevokeShare}
+      onShare={onShare}
+      onTagClick={onTagClick}
+      onTrash={onTrash}
+      onUpdate={onUpdate}
+      searchQuery={searchQuery}
+      share={sharesByMemo.get(memo.name)}
+    />
+  );
+
   return (
     <>
       {!isPaginationError && retryNotice}
@@ -502,7 +543,23 @@ export const MemoList = memo(function MemoList({
           {t("list.updating")}
         </div>
       )}
-      {memos.length > VIRTUALIZE_THRESHOLD ? (
+      {layout === "timeline" ? (
+        // The archive-style rail: one card per dot on a vertical line. Cards
+        // keep their full body here (that is the point of the layout), while
+        // their images collapse into an inline icon — a rail of screenshots
+        // would be nothing but pictures.
+        <div
+          aria-busy={isUpdating}
+          className="memo-timeline-rail motion-safe:animate-fade"
+          data-testid="memo-timeline-rail"
+        >
+          {memos.map((memo, index) => (
+            <div className="memo-timeline-item" key={memo.name}>
+              {renderCard(memo, index, "icon")}
+            </div>
+          ))}
+        </div>
+      ) : memos.length > VIRTUALIZE_THRESHOLD ? (
         <VirtualizedCards
           attachmentsByMemo={attachmentsByMemo}
           editingMemoNames={editingMemoNames}
@@ -531,34 +588,7 @@ export const MemoList = memo(function MemoList({
           aria-busy={isUpdating}
           className="flex flex-col gap-2.5 motion-safe:animate-fade"
         >
-          {memos.map((memo, index) => (
-            <MemoCard
-              attachments={
-                attachmentsByMemo.get(memo.name) ?? EMPTY_ATTACHMENTS
-              }
-              canManage={memo.can_manage === true}
-              canGovern={memo.can_govern === true}
-              index={index}
-              isFocused={focusedMemoId === (memo.id || memo.name)}
-              key={memo.name}
-              memo={memo}
-              onEditingChange={handleEditingChange}
-              onRequestDelete={setDeleteTargetMemo}
-              onRequestShareImage={setShareImageMemo}
-              onRequestVisibility={setVisibilityMemo}
-              searchQuery={searchQuery}
-              share={sharesByMemo.get(memo.name)}
-              onArchive={onArchive}
-              onHardDelete={onHardDelete}
-              onPin={onPin}
-              onRestore={onRestore}
-              onRevokeShare={onRevokeShare}
-              onShare={onShare}
-              onTagClick={onTagClick}
-              onTrash={onTrash}
-              onUpdate={onUpdate}
-            />
-          ))}
+          {memos.map((memo, index) => renderCard(memo, index))}
         </div>
       )}
       {isPaginationError && retryNotice}

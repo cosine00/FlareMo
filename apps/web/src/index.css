@@ -771,6 +771,172 @@ svg.lucide[stroke-width="2"] {
     @apply my-1 h-auto max-w-full rounded-xl border border-border/60;
   }
 
+  /* Body images open in the viewer, so they carry the zoom cursor. The image is
+     the control rather than a button wrapping it: a shrink-to-fit wrapper makes
+     the image's `max-width: 100%` resolve against the wrapper's own content,
+     which collapses the picture. */
+  .memo-markdown img[role="button"] {
+    @apply cursor-zoom-in;
+  }
+
+  .memo-markdown img[role="button"]:focus-visible {
+    @apply outline-none ring-2 ring-brand-500;
+  }
+
+  .memo-markdown img[role="button"]:hover {
+    @apply brightness-95;
+  }
+
+  /* Multi-image notes: a run of pictures becomes one justified band (see
+     MemoImageGallery). Each row carries explicit pixel sizes, so the shared
+     image chrome — margins, the 1px frame — would double up on the gap the
+     row already owns. */
+  .memo-markdown .memo-image-gallery {
+    @apply relative my-1;
+  }
+
+  .memo-markdown .memo-image-gallery-row {
+    @apply flex items-start justify-center gap-2;
+  }
+
+  .memo-markdown
+    .memo-image-gallery-row
+    + .memo-image-gallery-row {
+    @apply mt-2;
+  }
+
+  .memo-markdown .memo-image-gallery-item {
+    @apply m-0 rounded-lg;
+  }
+
+  /* A screenshot or a portrait photo is shown at a portrait card's size and
+     cropped to its middle: one tall capture would otherwise turn a note into a
+     two-metre scroll. The box is square-ish and never wider than 420px, so the
+     picture reads as a picture instead of a full-bleed band. */
+  .memo-markdown img.memo-image-tall {
+    @apply mx-auto block w-full rounded-xl object-cover;
+    max-width: 420px;
+    aspect-ratio: 1 / 1;
+    object-position: center;
+  }
+
+  /* The whole note's pictures collapsed into one inline glyph (see
+     MemoImageIcon). It trails the last line of prose, so it only needs a
+     hair of breathing room and a baseline nudge. The preview floats above it
+     on hover, and is suppressed on touch, where hover never happens. */
+  .memo-image-icon {
+    @apply text-brand-500 transition-colors;
+    vertical-align: -0.2em;
+    margin-inline: 0.28em 0.05em;
+  }
+
+  .memo-image-icon:hover,
+  .memo-image-icon:focus-visible {
+    @apply text-brand-600 outline-none;
+  }
+
+  .memo-image-icon-count {
+    @apply text-[0.82em] text-brand-500/70 tabular-nums;
+  }
+
+  /* The popup is fixed against the viewport (the component sets left plus
+     bottom-or-top inline): cards clip their overflow, so an absolutely
+     positioned popup inside one would surface as a sliver at the icon's line.
+     It only mounts while hovered, so no visibility choreography is needed. */
+  .memo-image-icon-preview {
+    position: fixed;
+    z-index: 60;
+    width: min(280px, 58vw);
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--popover);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
+    pointer-events: none;
+  }
+
+  .memo-image-icon-preview img {
+    display: block;
+    width: 100%;
+    /* A floor keeps the popup from opening as a hairline strip while the
+       bytes are still in flight; the cap keeps a tall screenshot from
+       opening a window taller than the card it belongs to. */
+    min-height: 120px;
+    max-height: 280px;
+    margin: 0;
+    border: 0;
+    border-radius: 7px;
+    background: var(--muted);
+    object-fit: cover;
+    object-position: center;
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .memo-image-icon-preview {
+      display: none;
+    }
+  }
+
+  /* The timeline rail: the same note cards, threaded on a vertical line, the
+     way the blog's clip page reads. The line belongs to the container; each
+     card owns its dot so hover can light it up. */
+  .memo-timeline-rail {
+    @apply relative ps-7;
+  }
+
+  .memo-timeline-rail::before {
+    content: "";
+    position: absolute;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    inset-inline-start: 0.54rem;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .memo-timeline-item {
+    @apply relative mb-3 last:mb-0;
+  }
+
+  .memo-timeline-item::before {
+    content: "";
+    position: absolute;
+    /* Centred on the rail: the line sits at .54rem from the rail's edge, and
+       the item starts at the 1.7rem rail padding, so the dot's left edge has
+       to land at .18rem — i.e. -1.52rem from the card. */
+    top: 1.05rem;
+    inset-inline-start: -1.52rem;
+    z-index: 3;
+    width: 0.72rem;
+    height: 0.72rem;
+    border: 2px solid var(--background);
+    border-radius: 9999px;
+    background: var(--brand-500);
+    opacity: 0.75;
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand-500) 30%, transparent);
+    transform: scale(0.82);
+    transition:
+      transform 0.22s ease,
+      opacity 0.22s ease,
+      box-shadow 0.22s ease;
+  }
+
+  .memo-timeline-item:hover::before,
+  .memo-timeline-item:focus-within::before {
+    opacity: 1;
+    transform: scale(1.12);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand-500) 14%, transparent);
+  }
+
+  /* Before the natural sizes are known, the pictures stack one per line. */
+  .memo-image-gallery-pending {
+    @apply flex flex-col gap-2;
+  }
+
+  .memo-markdown .memo-image-gallery-pending img {
+    @apply m-0 rounded-lg;
+  }
+
   /* Composer rich-text body. Typography mirrors .memo-markdown so editing and
      reading feel like the same surface, minus read-view extras (heading
      anchors, image frames). The box grows with content up to a cap. */
@@ -1000,12 +1166,31 @@ svg.lucide[stroke-width="2"] {
 
   /* An in-text #tag: a quiet chip at the point it was written. It never
      breaks between the hash and the name. */
+  /* In-text #tags wear the instance's brand appearance: a pill washed with a
+     light mix of the brand hue (color-mix tracks the active preset, so a
+     theme swap re-tints every tag at once) and brand-coloured text. */
   .memo-markdown .memo-tag {
-    @apply inline-block rounded-md bg-muted px-1 align-baseline text-[0.92em] leading-[1.6] whitespace-nowrap text-foreground/75 no-underline decoration-transparent dark:bg-muted/80;
+    @apply inline-block rounded-full px-2 align-baseline text-[0.92em] leading-[1.6] whitespace-nowrap no-underline decoration-transparent;
+    background: color-mix(in oklch, var(--brand-500) 12%, transparent);
+    color: color-mix(in oklch, var(--brand-700) 75%, var(--foreground));
+  }
+
+  .dark .memo-markdown .memo-tag {
+    color: color-mix(in oklch, var(--brand-300) 80%, white);
+    background: color-mix(in oklch, var(--brand-400) 16%, transparent);
   }
 
   .memo-markdown button.memo-tag {
-    @apply cursor-pointer motion-safe:transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_8%)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40;
+    @apply cursor-pointer motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40;
+  }
+
+  .memo-markdown button.memo-tag:hover {
+    background: color-mix(in oklch, var(--brand-500) 20%, transparent);
+    color: color-mix(in oklch, var(--brand-700) 90%, var(--foreground));
+  }
+
+  .dark .memo-markdown button.memo-tag:hover {
+    background: color-mix(in oklch, var(--brand-400) 26%, transparent);
   }
 
   .memo-timestamp-static {

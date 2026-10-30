@@ -56,12 +56,31 @@ export function AuthenticatedRoute({ children }: { children: ReactNode }) {
     if (destination.startsWith("/login")) return;
     if (redirectedDestination.current === destination) return;
     redirectedDestination.current = destination;
+    // Local customization: this instance publishes publicly, so a visitor who
+    // lands on the root gets the public timeline instead of a login wall. Deep
+    // links still go to sign-in with a return path, and /explore is outside
+    // this guard entirely.
+    if (location.pathname === "/") {
+      // Claim the destination before navigating: this component is still
+      // mounted for one more render when the location flips to /explore, and
+      // without the marker that render would fall through to the /login bounce
+      // (observed as /login?redirect=%2Fexplore).
+      redirectedDestination.current = "/explore";
+      void navigate({ replace: true, to: "/explore" });
+      return;
+    }
     void navigate({
       replace: true,
       search: { redirect: destination },
       to: "/login",
     });
-  }, [destination, navigate, session.data, session.isPending]);
+  }, [
+    destination,
+    navigate,
+    session.data,
+    session.isPending,
+    location.pathname,
+  ]);
 
   // Clear the one-shot marker once the bounce lands on the login page so a
   // later anonymous arrival at the same destination (sign-out, back

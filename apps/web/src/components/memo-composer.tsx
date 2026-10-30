@@ -26,13 +26,21 @@ import { useI18n } from "@/i18n";
 import type { MemoCaptureInput } from "@/lib/local-memo-capture";
 import { extractTags } from "@/lib/memo";
 import { scheduledTaskTitles } from "@/lib/memo-schedule";
-import { countMemoImages, MAX_MEMO_IMAGES } from "@/lib/memo-submission";
+import {
+  countMemoImages,
+  MAX_MEMO_IMAGES,
+  splitPickedFiles,
+} from "@/lib/memo-submission";
 import type { TagSuggestion } from "@/lib/tag-autocomplete";
 
 type MemoComposerProps = {
   draft: MemoCaptureInput;
   isPending: boolean;
-  /** Rendered only when the viewer holds a team membership. */
+  /**
+   * Rendered when the viewer can pick a publish target. Local customization:
+   * the picker now also offers "public", so it is no longer tied to holding a
+   * team membership.
+   */
   showVisibility?: boolean;
   /** Known tags with usage counts, powering the "#" autocomplete. */
   tags?: TagSuggestion[];
@@ -272,19 +280,32 @@ export function MemoComposer({
           captureAvailable={captureAvailable}
           withEditor={withEditor}
           onAddFiles={(files) => {
-            // A note holds nine images at most; extra picks are dropped
-            // with a pointer to articles rather than failing at send time.
-            let room = MAX_MEMO_IMAGES - countMemoImages(draftRef.current);
-            const accepted = files.filter((file) => {
-              if (!file.type.startsWith("image/")) return true;
-              room -= 1;
-              return room >= 0;
-            });
-            if (accepted.length < files.length) {
+            // Local customization: picked images follow the same route as
+            // pasted ones — inline, where the visibility picks the store — so
+            // a public note's picture does not land in the private attachment
+            // store just because it came from the picker. A note still holds
+            // nine images at most; non-images stay attachment chips.
+            const { images, attachments, droppedImages } = splitPickedFiles(
+              files,
+              MAX_MEMO_IMAGES - countMemoImages(draftRef.current),
+            );
+            if (droppedImages > 0) {
               toast.error(t("toast.tooManyMemoImages"));
             }
-            if (accepted.length === 0) return;
-            commitDraft({ files: [...draftRef.current.files, ...accepted] });
+            const editor = editorRef.current;
+            if (images.length > 0) {
+              if (editor) {
+                enqueueInlineUploads(images, editor.state.selection.to);
+              } else {
+                // No editor yet: keep the files rather than dropping them.
+                attachments.push(...images);
+              }
+            }
+            if (attachments.length > 0) {
+              commitDraft({
+                files: [...draftRef.current.files, ...attachments],
+              });
+            }
           }}
           schedule={draft.schedule}
           onScheduleChange={(schedule) => commitDraft({ schedule })}

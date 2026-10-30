@@ -39,12 +39,12 @@ export function WorkspacePageHeader({
         isScrolled ? "border-border shadow-xs" : "border-transparent",
       )}
     >
+      {/* Same measure and left edge as the page's content column below: the
+          title starts where the card starts and the actions end where the
+          card ends, rather than riding the window's far right. */}
       <div
-        className={cn(
-          "flex h-14 items-center gap-2 px-5 lg:px-3 motion-safe:transition-[max-width,padding] motion-safe:duration-250 motion-safe:ease-signal",
-          sidebarCollapsed && "mx-auto w-full",
-        )}
-        style={sidebarCollapsed ? { maxWidth: contentMaxWidth } : undefined}
+        className="flex h-14 items-center gap-2 px-5 lg:px-3 motion-safe:transition-[max-width,padding] motion-safe:duration-250 motion-safe:ease-signal"
+        style={{ maxWidth: contentMaxWidth }}
       >
         <div
           className={cn(

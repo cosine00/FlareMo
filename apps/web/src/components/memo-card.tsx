@@ -42,6 +42,11 @@ type MemoCardProps = {
   canGovern?: boolean;
   /** Focused via J/K keyboard navigation. */
   isFocused?: boolean;
+  /**
+   * How body pictures are shown: inline (the default reading face) or as a
+   * single inline icon, which is what the dense timeline rail wants.
+   */
+  imageMode?: "full" | "icon";
   onRequestDelete?: (memo: Memo) => void;
   onRequestShareImage?: (memo: Memo) => void;
   onRequestVisibility?: (memo: Memo) => void;
@@ -70,6 +75,7 @@ export const MemoCard = memo(function MemoCard({
   onTagClick,
   canManage = false,
   canGovern = false,
+  imageMode = "full",
   isFocused = false,
   onRequestDelete,
   onRequestShareImage,
@@ -178,6 +184,7 @@ export const MemoCard = memo(function MemoCard({
           attachments={attachments}
           canManage={canManage}
           expanded={expanded}
+          imageMode={imageMode}
           memo={memo}
           onTagClick={onTagClick}
           onToggleExpanded={() => setExpanded((value) => !value)}

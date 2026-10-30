@@ -1,188 +1,167 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import {
-  DownloadIcon,
-  RotateCcwIcon,
-  XIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
 
-const MIN_SCALE = 1;
-const MAX_SCALE = 8;
-/** One wheel notch / zoom-button step. */
-const SCALE_STEP = 0.25;
+export type LightboxImage = { alt?: string; src: string };
 
 type ImageLightboxProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Single-image callers (an attachment tile) pass `src`; notes pass a set. */
   src?: string;
   alt?: string;
-  downloadUrl?: string;
+  images?: LightboxImage[];
+  /** Which entry of `images` opens first. */
+  index?: number;
+  /** Alt text fallback for a picture that carries none of its own. */
   filename?: string;
 };
 
 /**
- * Full-surface image preview. The image renders at its intrinsic width inside
- * a scrollable viewport, so a tall screenshot stays fully readable by
- * scrolling instead of being shrunk into an 85vh box. Wheel zoom (ctrl-free,
- * plain wheel scales like a viewer) grows beyond the viewport and the
- * horizontal overflow pans; Reset returns to the fit view.
+ * Full-screen picture viewer.
+ *
+ * The model is the blog's ViewImage: the page dims and blurs behind the photo,
+ * the photo is fitted to the viewport at its own aspect ratio, and one small
+ * translucent toolbar sits at the bottom — position counter, previous/next,
+ * close. Clicking the empty space around the photo closes it; arrows and Esc
+ * work from the keyboard. No zoom: the surrounding page already offers the
+ * full-size file, and a fit-to-window view is what makes a 3000px screenshot
+ * legible at a glance.
  */
 export function ImageLightbox({
   open,
   onOpenChange,
   src,
   alt,
-  downloadUrl,
+  images,
+  index = 0,
   filename,
 }: ImageLightboxProps) {
   const { t } = useI18n();
-  const [scale, setScale] = useState(MIN_SCALE);
-  // Set once the img loads; lets the viewport give the scrollable content the
-  // intrinsic height before the bytes arrive (no scrollbar jump mid-load).
-  const [intrinsic, setIntrinsic] = useState<{ w: number; h: number } | null>(
-    null,
+  const items = useMemo<LightboxImage[]>(() => {
+    if (images && images.length > 0) return images;
+    return src ? [{ src, alt }] : [];
+  }, [images, src, alt]);
+
+  const [current, setCurrent] = useState(index);
+
+  // Reopening always starts on the picture that was clicked, even when the
+  // dialog instance is reused for the next one.
+  useEffect(() => {
+    if (open) setCurrent(index);
+  }, [open, index]);
+
+  const count = items.length;
+  const step = useCallback(
+    (delta: number) => {
+      if (count < 2) return;
+      setCurrent((previous) => (previous + delta + count) % count);
+    },
+    [count],
   );
-  const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) {
-      setScale(MIN_SCALE);
-      setIntrinsic(null);
+    if (!open || count < 2) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        step(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        step(1);
+      }
+    };
+    // Capture phase: the dialog primitive handles its own arrow keys on the
+    // popup and stops propagation there, so a bubble-phase listener never ran.
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [open, count, step]);
+
+  const active = items[current] ?? items[0];
+
+  // The neighbours are one keystroke away; warming them keeps the flip instant.
+  useEffect(() => {
+    if (!open || count < 2) return;
+    for (const delta of [1, -1]) {
+      const neighbour = items[(current + delta + count) % count];
+      if (neighbour) {
+        const image = new Image();
+        image.src = neighbour.src;
+      }
     }
-  }, [open]);
+  }, [open, current, count, items]);
 
-  const zoomTo = useCallback((next: number) => {
-    setScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, next)));
-  }, []);
-
-  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-    if (!event.deltaY) return;
-    event.preventDefault();
-    setScale((current) => {
-      const next =
-        current * (event.deltaY < 0 ? 1 + SCALE_STEP : 1 / (1 + SCALE_STEP));
-      return Math.min(MAX_SCALE, Math.max(MIN_SCALE, next));
-    });
-  }, []);
-
-  if (!src) return null;
+  if (!active) return null;
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md transition-opacity duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
-        <DialogPrimitive.Popup
-          className="fixed inset-0 z-50 flex flex-col p-4 outline-none select-none"
-          initialFocus={viewportRef}
-        >
-          {/* Top action bar */}
-          <div className="relative z-10 flex items-center justify-between">
-            <span className="truncate max-w-[50vw] text-xs font-mono text-white/70">
-              {filename ?? alt ?? ""}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t("imageViewer.zoomOut")}
-                title={t("imageViewer.zoomOut")}
-                disabled={scale <= MIN_SCALE}
-                className="size-8 text-white/90 hover:bg-white/20 hover:text-white"
-                onClick={() => zoomTo(scale - SCALE_STEP)}
-              >
-                <ZoomOutIcon className="size-4" />
-              </Button>
-              <span className="min-w-10 text-center font-mono text-xs text-white/70">
-                {Math.round(scale * 100)}%
-              </span>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t("imageViewer.zoomIn")}
-                title={t("imageViewer.zoomIn")}
-                disabled={scale >= MAX_SCALE}
-                className="size-8 text-white/90 hover:bg-white/20 hover:text-white"
-                onClick={() => zoomTo(scale + SCALE_STEP)}
-              >
-                <ZoomInIcon className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t("imageViewer.reset")}
-                title={t("imageViewer.reset")}
-                disabled={scale === MIN_SCALE}
-                className="size-8 text-white/90 hover:bg-white/20 hover:text-white"
-                onClick={() => zoomTo(MIN_SCALE)}
-              >
-                <RotateCcwIcon className="size-4" />
-              </Button>
-              {downloadUrl && (
-                <a
-                  href={downloadUrl}
-                  download={filename}
-                  aria-label={t("common.download")}
-                  title={t("common.download")}
-                  className="inline-flex size-8 items-center justify-center rounded-lg bg-white/10 text-white/90 hover:bg-white/20 transition-colors"
-                >
-                  <DownloadIcon className="size-4" />
-                </a>
-              )}
-              <DialogPrimitive.Close
-                render={
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("common.close")}
-                    title={t("common.close")}
-                    className="size-8 text-white/90 hover:bg-white/20 hover:text-white"
-                  >
-                    <XIcon className="size-4" />
-                  </Button>
-                }
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xl transition-opacity duration-300 data-closed:opacity-0" />
+        <DialogPrimitive.Popup className="fixed inset-0 z-50 flex select-none flex-col p-4 outline-none">
+          {/* The photo owns everything above the bar. Clicking anywhere in
+              this area that is not the photo closes the viewer — the same
+              "click outside to dismiss" the blog viewer offers. The dismissal
+              is a real button filling the surface, with the photo layered on
+              top: a div with a click handler would be an inaccessible control
+              on a static element. */}
+          <div className="relative min-h-0 flex-1">
+            <button
+              aria-label={t("common.close")}
+              className="absolute inset-0 cursor-zoom-out outline-none"
+              type="button"
+              onClick={() => onOpenChange(false)}
+            />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <img
+                alt={active.alt ?? filename ?? ""}
+                className="pointer-events-auto max-h-full max-w-full rounded-[3px] object-contain shadow-2xl motion-safe:animate-fade"
+                decoding="async"
+                key={active.src}
+                src={active.src}
               />
             </div>
           </div>
 
-          {/* Scrollable viewport: fit-width by default (scale 1), wheel/button
-              zoom scales the intrinsic box; horizontal overflow pans with
-              native scroll. */}
-          <div
-            className="mt-2 flex-1 overflow-auto rounded-lg"
-            onWheel={handleWheel}
-            ref={viewportRef}
-          >
-            <img
-              src={src}
-              alt={alt ?? filename ?? ""}
-              className="mx-auto block rounded-lg shadow-2xl"
-              decoding="async"
-              onLoad={(event) => {
-                const img = event.currentTarget;
-                if (img.naturalWidth) {
-                  setIntrinsic({ w: img.naturalWidth, h: img.naturalHeight });
-                }
-              }}
-              style={
-                intrinsic
-                  ? {
-                      // Base width fills the viewport; scale multiplies it.
-                      // The intrinsic ratio is preserved by the browser.
-                      width: `${scale * 100}%`,
-                      maxWidth: "none",
-                      minWidth: `${intrinsic.w}px`,
-                    }
-                  : { maxWidth: "none", minWidth: "0px" }
-              }
-            />
+          <div className="relative mx-auto mt-3 flex w-full max-w-[600px] items-center justify-between rounded-[5px] bg-white/15 px-2.5 py-2 text-white backdrop-blur-md">
+            <span className="flex w-[60px] items-center justify-center font-mono text-xs tabular-nums">
+              <b className="font-semibold">{current + 1}</b>
+              <span className="opacity-60">/{count}</span>
+            </span>
+            <div className="flex items-center gap-2">
+              {count > 1 && (
+                <>
+                  <button
+                    aria-label={t("imageViewer.previous")}
+                    className="flex size-8 items-center justify-center rounded-[3px] bg-white/20 text-white transition-colors hover:bg-white/40"
+                    title={t("imageViewer.previous")}
+                    type="button"
+                    onClick={() => step(-1)}
+                  >
+                    <ChevronLeftIcon className="size-5" />
+                  </button>
+                  <button
+                    aria-label={t("imageViewer.next")}
+                    className="flex size-8 items-center justify-center rounded-[3px] bg-white/20 text-white transition-colors hover:bg-white/40"
+                    title={t("imageViewer.next")}
+                    type="button"
+                    onClick={() => step(1)}
+                  >
+                    <ChevronRightIcon className="size-5" />
+                  </button>
+                </>
+              )}
+              <button
+                aria-label={t("common.close")}
+                className="flex size-8 items-center justify-center rounded-[3px] bg-white/20 text-white transition-colors hover:bg-white/40"
+                title={t("common.close")}
+                type="button"
+                onClick={() => onOpenChange(false)}
+              >
+                <XIcon className="size-4" />
+              </button>
+            </div>
           </div>
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>

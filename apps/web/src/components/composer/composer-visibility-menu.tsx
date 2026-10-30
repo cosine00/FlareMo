@@ -1,4 +1,10 @@
-import { Loader2Icon, LockIcon, SendIcon, UsersIcon } from "lucide-react";
+import {
+  GlobeIcon,
+  Loader2Icon,
+  LockIcon,
+  SendIcon,
+  UsersIcon,
+} from "lucide-react";
 import type { MemoVisibility } from "@/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,10 +23,15 @@ const SUBMIT_HINT =
     : "Ctrl ↵";
 
 /**
- * The composer's right rail: the personal/team visibility picker (only for
- * members who can choose) and the round send button, which submits the form.
- * The current visibility decides which of the two items is inert, so picking
- * the active one is a no-op rather than a redundant draft write.
+ * The composer's right rail: the visibility picker (only for members who can
+ * choose) and the round send button, which submits the form. The current
+ * visibility decides which of the items is inert, so picking the active one is
+ * a no-op rather than a redundant draft write.
+ *
+ * Local customization: the menu also offers "public". Stock FlareMo only let
+ * you flip a memo to public after publishing; offering it here means a memo
+ * can be born public, which is also the only way the composer's inline images
+ * take the public image-bed route on the first write.
  */
 export function ComposerVisibilityMenu({
   showVisibility,
@@ -41,6 +52,18 @@ export function ComposerVisibilityMenu({
   onVisibilityChange: (visibility: MemoVisibility) => void;
 }) {
   const { t } = useI18n();
+  const VisibilityIcon =
+    visibility === "public"
+      ? GlobeIcon
+      : visibility === "protected"
+        ? UsersIcon
+        : LockIcon;
+  const visibilityLabel =
+    visibility === "public"
+      ? t("composer.visibility.public")
+      : visibility === "protected"
+        ? t("composer.visibility.team")
+        : t("composer.visibility.personal");
   return (
     <div className="flex shrink-0 items-center gap-1.5 self-center">
       {showVisibility && (
@@ -51,7 +74,7 @@ export function ComposerVisibilityMenu({
                 aria-label={t("composer.visibility.aria")}
                 className={cn(
                   "h-7 gap-1 rounded-full border px-2.5 text-xs font-normal transition-colors",
-                  visibility === "protected"
+                  visibility === "protected" || visibility === "public"
                     ? "border-primary/30 bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground"
                     : "border-border bg-card text-muted-foreground hover:text-foreground",
                 )}
@@ -62,23 +85,17 @@ export function ComposerVisibilityMenu({
               />
             }
           >
-            {visibility === "protected" ? (
-              <UsersIcon data-icon="inline-start" className="size-3.5" />
-            ) : (
-              <LockIcon data-icon="inline-start" className="size-3.5" />
-            )}
+            <VisibilityIcon data-icon="inline-start" className="size-3.5" />
             <span
               className={cn(visibility === "private" && "hidden sm:inline")}
             >
-              {visibility === "protected"
-                ? t("composer.visibility.team")
-                : t("composer.visibility.personal")}
+              {visibilityLabel}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() => {
-                if (visibility === "protected") return;
+                if (visibility === "private") return;
                 onVisibilityChange("private");
               }}
             >
@@ -87,12 +104,21 @@ export function ComposerVisibilityMenu({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                if (visibility !== "protected") return;
+                if (visibility === "protected") return;
                 onVisibilityChange("protected");
               }}
             >
               <UsersIcon />
               {t("composer.visibility.team")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                if (visibility === "public") return;
+                onVisibilityChange("public");
+              }}
+            >
+              <GlobeIcon />
+              {t("composer.visibility.public")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

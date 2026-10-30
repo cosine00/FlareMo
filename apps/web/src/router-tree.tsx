@@ -20,6 +20,7 @@ import { isRtlLocale, useI18n } from "@/i18n";
 import { todayKey } from "@/lib/calendar-date";
 import { allTasksQuery, isTaskView, type TaskView } from "@/lib/task-views";
 import { AuthenticatedRoute } from "@/routes/authenticated-route";
+import { exploreRoute } from "@/routes/explore-route";
 import { indexRoute } from "@/routes/index-route";
 import { rootRoute } from "@/routes/root-route";
 import { RouteLoading } from "@/routes/route-loading";
@@ -499,6 +500,7 @@ const router = createRouter({
   // placeholder keeps route loader signatures aware of it.
   context: { queryClient: undefined as unknown as QueryClient },
   routeTree: rootRoute.addChildren([
+    exploreRoute,
     indexRoute,
     memoRoute,
     shareRoute,

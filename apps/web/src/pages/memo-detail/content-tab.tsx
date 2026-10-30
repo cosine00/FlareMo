@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TabsContent } from "@/components/ui/tabs";
 import { useI18n } from "@/i18n";
+import { markdownImages, stripMarkdownImages } from "@/lib/memo-media";
 import { stripResourceName } from "@/lib/utils";
 
 /**
@@ -101,30 +102,61 @@ export function ContentTab({
       {related.length > 0 && (
         <section className="flex flex-col gap-2 border-t border-border/60 pt-4">
           <h2 className="text-sm font-medium">{t("detail.related")}</h2>
-          {related.map((memo) => (
-            <Link
-              className="rounded-lg border p-3 text-sm transition-colors hover:bg-muted"
-              key={memo.name}
-              params={{ memoId: memo.id }}
-              to="/memo/$memoId"
-            >
-              <div className="line-clamp-2">{memo.content}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {[
-                  memo.via_relation ? t("detail.relatedViaRelation") : null,
-                  memo.shared_tags.length > 0
-                    ? t("detail.relatedSharedTags", {
-                        tags: memo.shared_tags
-                          .map((tag) => `#${tag}`)
-                          .join(" "),
-                      })
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </div>
-            </Link>
-          ))}
+          {related.map((memo) => {
+            // Photo notes read as a wall of raw markdown URLs in a plain
+            // excerpt; the pictures become thumbnails beside the words, the
+            // way the timeline's cards treat them.
+            const images = markdownImages(memo.content);
+            const excerpt = stripMarkdownImages(memo.content);
+            return (
+              <Link
+                className="rounded-lg border p-3 text-sm transition-colors hover:bg-muted"
+                key={memo.name}
+                params={{ memoId: memo.id }}
+                to="/memo/$memoId"
+              >
+                <div className="flex gap-3">
+                  <div className="min-w-0 flex-1">
+                    {excerpt && <div className="line-clamp-2">{excerpt}</div>}
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {[
+                        memo.via_relation
+                          ? t("detail.relatedViaRelation")
+                          : null,
+                        memo.shared_tags.length > 0
+                          ? t("detail.relatedSharedTags", {
+                              tags: memo.shared_tags
+                                .map((tag) => `#${tag}`)
+                                .join(" "),
+                            })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  </div>
+                  {images.length > 0 && (
+                    <div className="flex shrink-0 items-start gap-1">
+                      {images.slice(0, 3).map((image) => (
+                        <img
+                          alt={image.alt ?? ""}
+                          className="h-14 w-14 rounded-md border border-border/60 object-cover"
+                          key={image.src}
+                          loading="lazy"
+                          src={image.src}
+                        />
+                      ))}
+                      {images.length > 3 && (
+                        <span className="flex h-14 min-w-6 items-center justify-center rounded-md border border-border/60 text-xs text-muted-foreground">
+                          +{images.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </section>
       )}
     </TabsContent>

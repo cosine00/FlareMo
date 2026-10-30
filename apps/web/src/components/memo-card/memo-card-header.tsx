@@ -81,9 +81,12 @@ export function MemoCardHeader({
               {formatMemoTime(memo.display_time, locale)}
             </span>
           </span>
-          {/* Author belongs to the shared spaces: a personal note has no
-              audience besides its author, so the name is noise there. */}
-          {memo.visibility !== "private" && memo.creator_name && (
+          {/* Author belongs to the spaces shared with other people: a
+              personal note has no audience besides its author, and a public
+              one is still this instance's own voice — the name is noise in
+              both. Only the team space ("protected") credits who wrote a
+              note. */}
+          {memo.visibility === "protected" && memo.creator_name && (
             <span>· {memo.creator_name}</span>
           )}
         </Link>

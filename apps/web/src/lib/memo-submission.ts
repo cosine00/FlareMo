@@ -25,6 +25,37 @@ export function countMemoImages(input: MemoCaptureInput) {
   );
 }
 
+/**
+ * Local customization: splits the files picked through the composer's picker.
+ *
+ * Picked images go inline, exactly like pasted ones, so the memo's visibility
+ * picks the store (public → image bed, otherwise the attachment store). Before
+ * this they were parked as attachment chips, which sent a public note's
+ * pictures to the private `/api/v1/attachments/<id>/blob` route. Everything
+ * that is not an image stays an attachment. Images past `imageRoom` are
+ * dropped and counted so the caller can warn once.
+ */
+export function splitPickedFiles(
+  files: File[],
+  imageRoom: number,
+): { images: File[]; attachments: File[]; droppedImages: number } {
+  const images: File[] = [];
+  const attachments: File[] = [];
+  let room = Math.max(0, imageRoom);
+  let imageCount = 0;
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) {
+      attachments.push(file);
+      continue;
+    }
+    imageCount += 1;
+    if (room <= 0) continue;
+    room -= 1;
+    images.push(file);
+  }
+  return { images, attachments, droppedImages: imageCount - images.length };
+}
+
 export async function createMemoWithAttachments(input: MemoCaptureInput) {
   const memo = await createMemo({
     content: input.content,

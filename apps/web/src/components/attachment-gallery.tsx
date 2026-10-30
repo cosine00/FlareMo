@@ -56,7 +56,6 @@ function GalleryItem({ attachment }: { attachment: Attachment }) {
               onOpenChange={setLightboxOpen}
               src={attachment.preview_url}
               alt={attachment.filename}
-              downloadUrl={attachment.download_url}
               filename={attachment.filename}
             />
           </>
@@ -148,7 +147,6 @@ function ImageTile({
         onOpenChange={setLightboxOpen}
         src={attachment.preview_url}
         alt={attachment.filename}
-        downloadUrl={attachment.download_url}
         filename={attachment.filename}
       />
     </>
@@ -158,6 +156,10 @@ function ImageTile({
 /**
  * A memo's attachments: images as a grid (up to three across, two across for
  * two or four so the grid stays square), then audio and files as rows.
+ *
+ * The timeline rail never reaches this with pictures: there they fold into the
+ * note's own image glyph (see MemoContent's `iconImages`), so only files and
+ * audio ride along.
  */
 export function AttachmentGallery({
   attachments,

@@ -1,6 +1,7 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { Editor } from "@tiptap/react";
 import { Suspense, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { MemoVisibility } from "@/api";
 import { buildArticleExtensions } from "@/components/article-editor";
 import { ComposerCanvasActions } from "@/components/composer/composer-canvas-actions";
@@ -24,6 +25,11 @@ import { useInlineImageUploads } from "@/hooks/use-inline-image-uploads";
 import { useI18n } from "@/i18n";
 import type { MemoCaptureInput } from "@/lib/local-memo-capture";
 import { extractTags } from "@/lib/memo";
+import {
+  countMemoImages,
+  MAX_MEMO_IMAGES,
+  splitPickedFiles,
+} from "@/lib/memo-submission";
 import type { TagSuggestion } from "@/lib/tag-autocomplete";
 
 export type ComposerFocusCanvasProps = {
@@ -350,9 +356,33 @@ export function ComposerFocusCanvas({
                 isPending={isPending}
                 voiceActive={voiceActive}
                 withEditor={withEditor}
-                onAddFiles={(files) =>
-                  commitDraft({ files: [...draftRef.current.files, ...files] })
-                }
+                onAddFiles={(files) => {
+                  // Same route as the inline composer: picked images go inline
+                  // so the visibility picks the store, other files stay chips.
+                  const { images, attachments, droppedImages } =
+                    splitPickedFiles(
+                      files,
+                      MAX_MEMO_IMAGES - countMemoImages(draftRef.current),
+                    );
+                  if (droppedImages > 0) {
+                    toast.error(t("toast.tooManyMemoImages"));
+                  }
+                  if (images.length > 0) {
+                    if (canvasEditorRef.current) {
+                      enqueueInlineUploads(
+                        images,
+                        canvasEditorRef.current.state.selection.to,
+                      );
+                    } else {
+                      attachments.push(...images);
+                    }
+                  }
+                  if (attachments.length > 0) {
+                    commitDraft({
+                      files: [...draftRef.current.files, ...attachments],
+                    });
+                  }
+                }}
                 onStartVoice={() => void captureController.start()}
               />
               <ComposerCanvasActions

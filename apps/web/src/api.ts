@@ -13,6 +13,7 @@ export * from "./api/data-tasks";
 export * from "./api/integrations";
 export * from "./api/memories";
 export * from "./api/memos";
+export * from "./api/public-timeline";
 export * from "./api/notifications";
 export * from "./api/plugins";
 export * from "./api/projects";

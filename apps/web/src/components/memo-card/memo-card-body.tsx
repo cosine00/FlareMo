@@ -27,6 +27,8 @@ type MemoCardBodyProps = {
   canManage: boolean;
   /** Expansion survives an edit round-trip, so the card holds it. */
   expanded: boolean;
+  /** Inline pictures, or one inline icon for the whole note. */
+  imageMode?: "full" | "icon";
   memo: Memo;
   onTagClick?: (tag: string) => void;
   onToggleExpanded: () => void;
@@ -39,6 +41,7 @@ export function MemoCardBody({
   attachments,
   canManage,
   expanded,
+  imageMode = "full",
   memo,
   onTagClick,
   onToggleExpanded,
@@ -76,6 +79,32 @@ export function MemoCardBody({
     () => filterUnreferencedAttachments(attachments, memo.content),
     [attachments, memo.content],
   );
+  // In the rail, a note's pictures all become one glyph at the end of its last
+  // line — the uploaded ones included, or the icon would drop onto a line of
+  // its own below the text. Files and audio keep their compact rows.
+  const iconImages = useMemo(
+    () =>
+      imageMode === "icon"
+        ? galleryAttachments
+            .filter((attachment) =>
+              attachment.content_type?.startsWith("image/"),
+            )
+            .map((attachment) => ({
+              alt: attachment.filename,
+              src: attachment.preview_url,
+            }))
+        : [],
+    [galleryAttachments, imageMode],
+  );
+  const galleryRest = useMemo(
+    () =>
+      imageMode === "icon"
+        ? galleryAttachments.filter(
+            (attachment) => !attachment.content_type?.startsWith("image/"),
+          )
+        : galleryAttachments,
+    [galleryAttachments, imageMode],
+  );
   // Long bodies (transcripts, articles) collapse so one memo cannot dominate
   // the timeline.
   const isCollapsible = useMemo(
@@ -110,6 +139,8 @@ export function MemoCardBody({
           >
             <LazyMemoContent
               content={memo.content}
+              iconImages={iconImages}
+              imageMode={imageMode}
               interactiveTaskLists={canManage && taskCount > 0}
               resolveImageDimensions={resolveImageDimensions}
               onToggleTask={taskInteraction?.onToggleTask}
@@ -140,9 +171,9 @@ export function MemoCardBody({
         {searchQuery && collapsed && (
           <MemoSearchExcerpt content={memo.content} query={searchQuery} />
         )}
-        {galleryAttachments.length > 0 && (
-          <div className="mt-3">
-            <AttachmentGallery attachments={galleryAttachments} />
+        {galleryRest.length > 0 && (
+          <div className={imageMode === "icon" ? "mt-1.5" : "mt-3"}>
+            <AttachmentGallery attachments={galleryRest} />
           </div>
         )}
       </div>

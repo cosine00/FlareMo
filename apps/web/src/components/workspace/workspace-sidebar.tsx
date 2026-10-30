@@ -206,9 +206,17 @@ function WorkspaceExplorerPanel({
 export function WorkspaceSidebar({
   collapsed,
   explorer,
+  shellWidth = 952,
 }: {
   collapsed: boolean;
   explorer: WorkspaceSidebarContent;
+  /**
+   * Width of the centered composition this column belongs to (explorer +
+   * content). The column pushes itself to that frame's left edge, so the pair
+   * stays centered in the window while the scroller still runs to the window's
+   * right edge for the scrollbar.
+   */
+  shellWidth?: number;
 }) {
   return (
     <aside
@@ -219,6 +227,16 @@ export function WorkspaceSidebar({
           ? "w-0 opacity-0 pointer-events-none"
           : "w-[312px] opacity-100",
       )}
+      style={
+        collapsed
+          ? undefined
+          : // Recenter the original two-column composition. Below the frame
+            // width the margin clamps to zero and the columns simply fill the
+            // window.
+            {
+              marginInlineStart: `max(0px, calc((100% - ${shellWidth}px) / 2))`,
+            }
+      }
     >
       <div className="no-scrollbar h-full w-[312px] overflow-y-auto border-r bg-background">
         <WorkspaceExplorerPanel
