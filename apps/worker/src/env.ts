@@ -37,6 +37,7 @@ export type FlareMoEnv = Env & {
   FLAREMO_BOOTSTRAP_SECRET?: string;
   FLAREMO_RECOVERY_SECRET?: string;
   FLAREMO_PUBLIC_URL?: string;
+  FLAREMO_MEMO_FEED_BLOG_URL?: string;
   FLAREMO_TRUSTED_ORIGINS?: string;
   // Local customization: public image bed. `IMAGES` is an extra R2 binding
   // (the bucket published at FLAREMO_IMAGE_BED_URL) that POST /api/v1/images

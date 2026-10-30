@@ -1,8 +1,11 @@
 import {
   getAttachmentById,
+  getMemoByIdForViewer,
   getPublicArticleAttachment,
   getPublicShareByToken,
 } from "@flaremo/domain";
+import { attachments } from "@flaremo/db";
+import { and, eq, isNull } from "drizzle-orm";
 import { attachmentToDto, memoToDto, shareToDto } from "@flaremo/memos";
 import { Hono } from "hono";
 import { attachmentObjectResponse } from "../attachment-http";
@@ -10,6 +13,38 @@ import { getFlareMoDb, type HonoBindings } from "../context";
 import { jsonError } from "../http";
 
 export const publicApi = new Hono<HonoBindings>();
+
+// Anonymous attachment access for public Memo RSS items. The memo visibility
+// is checked on every request, so revoked public access also revokes its images.
+publicApi.get("/memos/:memoId/attachments/:id/blob", async (c) => {
+  try {
+    const db = getFlareMoDb(c.env);
+    const memo = await getMemoByIdForViewer(db, null, "memos/" + c.req.param("memoId"));
+    if (memo.visibility !== "public" || memo.status !== "normal" || memo.deletedAt !== null) {
+      return c.json({ error: { message: "Attachment not found" } }, 404);
+    }
+    const attachmentId = c.req.param("id").replace(/^attachments\//, "");
+    const attachment = await db.select().from(attachments).where(and(
+      eq(attachments.id, "attachments/" + attachmentId),
+      eq(attachments.memoId, memo.id),
+      eq(attachments.state, "ready"),
+      isNull(attachments.deletedAt),
+    )).get();
+    if (!attachment) return c.json({ error: { message: "Attachment not found" } }, 404);
+    const response = await attachmentObjectResponse({
+      attachment,
+      bucket: c.env.ATTACHMENTS,
+      cacheControl: "public, max-age=60, must-revalidate",
+      inlineRequested: true,
+      thumbnailRequested: c.req.query("thumbnail") === "true",
+      request: c.req.raw,
+    });
+    if (!response) return c.json({ error: { message: "Attachment object not found" } }, 404);
+    return response;
+  } catch (error) {
+    return jsonError(c, error);
+  }
+});
 
 publicApi.get("/shares/:token", async (c) => {
   try {

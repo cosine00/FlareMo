@@ -82,21 +82,27 @@ export function mountLazyRoute(
  * Register the SSR public pages lazily. The pages modules expose
  * `registerXxx(app)` functions instead of Hono instances, so the loader
  * builds a private Hono, runs the register functions against it, and the
- * outer GET proxies forward the five public page paths with the original
+ * outer GET proxies forward the six public page paths with the original
  * absolute path preserved (the pages register absolute routes). `app.all`
  * (not `app.get`) keeps HEAD/OPTIONS behaving exactly like the static mount.
  */
 export function mountLazySsrPages(app: Hono<HonoBindings>): void {
   const loadPages = async (): Promise<AnyHono> => {
-    const [{ registerArticlePage }, { registerSharePage }, { Hono }] =
-      await Promise.all([
-        import("./routes/article-page"),
-        import("./routes/share-page"),
-        import("hono"),
-      ]);
+    const [
+      { registerArticlePage },
+      { registerSharePage },
+      { registerMemoFeed },
+      { Hono },
+    ] = await Promise.all([
+      import("./routes/article-page"),
+      import("./routes/share-page"),
+      import("./routes/memo-feed"),
+      import("hono"),
+    ]);
     const inner = new Hono<HonoBindings>();
     registerSharePage(inner);
     registerArticlePage(inner);
+    registerMemoFeed(inner);
     return inner;
   };
   // Loaded on the first page request, not when the app is assembled. Eager
@@ -109,6 +115,7 @@ export function mountLazySsrPages(app: Hono<HonoBindings>): void {
     "/sitemap.xml",
     "/sitemap-articles.xml",
     "/feed.xml",
+    "/memos.xml",
     "/share/:token",
     "/article/:slug",
   ]) {

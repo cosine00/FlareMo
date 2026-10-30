@@ -3,6 +3,8 @@ import {
   articles,
   attachments,
   createDb,
+  memoRelations,
+  memos,
   users,
 } from "@flaremo/db";
 import { eq } from "drizzle-orm";
@@ -16,6 +18,7 @@ import {
   rewriteArticleFileUrls,
   extractReferencedAttachmentIds as workerExtractRefs,
 } from "./routes/article-page";
+import { rewriteMemoFileUrls } from "./routes/memo-feed";
 
 let mf: Miniflare;
 let env: Env;
@@ -81,6 +84,42 @@ async function seedArticle(
 
 function articleRequest(url = `https://flaremo.example/article/${SLUG}`) {
   return app.fetch(new Request(url), env);
+}
+
+async function seedMemoFeedRows() {
+  const db = createDb(env.DB);
+  const now = "2026-09-02T00:00:00.000Z";
+  const userId = "users/e2e-article-owner";
+  await db.insert(users).values({
+    id: userId, email: "owner@example.com", name: "Owner",
+    status: "active", createdAt: now, updatedAt: now,
+  }).onConflictDoNothing();
+  await db.insert(memos).values([
+    {
+      id: "memos/e2e-public-memo", userId,
+      content: "# Public memo\n\n![bed](https://img.hux.ink/test.webp)\n\n![upload](/file/attachments/e2e-image/photo.png)",
+      visibility: "public", status: "normal", pinned: false, source: "web",
+      payload: { tags: ["生活"], property: { title: "公开随手记" } },
+      createdAt: now, updatedAt: now, deletedAt: null,
+    },
+    { id: "memos/e2e-private", userId, content: "PRIVATE_SENTINEL", visibility: "private", status: "normal", createdAt: now, updatedAt: now },
+    { id: "memos/e2e-protected", userId, content: "PROTECTED_SENTINEL", visibility: "protected", status: "normal", createdAt: now, updatedAt: now },
+    { id: "memos/e2e-archived", userId, content: "ARCHIVED_SENTINEL", visibility: "public", status: "archived", createdAt: now, updatedAt: now },
+    { id: "memos/e2e-comment", userId, content: "COMMENT_SENTINEL", visibility: "public", status: "normal", createdAt: now, updatedAt: now },
+  ]);
+  await db.insert(memoRelations).values({
+    memoId: "memos/e2e-comment", relatedMemoId: "memos/e2e-public-memo",
+    type: "comment", createdAt: now,
+  });
+  await env.ATTACHMENTS.put("memos/e2e-image", new Uint8Array([1,2,3]), {
+    httpMetadata: { contentType: "image/png" },
+  });
+  await db.insert(attachments).values({
+    id: "attachments/e2e-image", userId, memoId: "memos/e2e-public-memo",
+    articleId: null, r2Key: "memos/e2e-image", filename: "photo.png",
+    contentType: "image/png", size: 3, state: "ready", etag: "test",
+    payload: {}, createdAt: now, updatedAt: now, deletedAt: null,
+  });
 }
 
 describe("Article page (standalone SEO HTML)", () => {
@@ -238,6 +277,38 @@ describe("Article page (standalone SEO HTML)", () => {
     expect(xml).toContain(
       "https://flaremo.example/api/public/articles/hello-flaremo-article/attachments/e2e-article-image/blob",
     );
+  });
+
+  it("serves a public Memo RSS feed and excludes non-public memos", async () => {
+    await seedMemoFeedRows();
+    const response = await app.fetch(new Request("https://flaremo.example/memos.xml"), env);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/rss+xml");
+    const xml = await response.text();
+    expect(xml).toContain("公开随手记");
+    expect(xml).toContain("https://hux.ink/bb/#memo-e2e-public-memo");
+    expect(xml).toContain("https://img.hux.ink/test.webp");
+    expect(xml).toContain("https://flaremo.example/api/public/memos/e2e-public-memo/attachments/e2e-image/blob");
+    expect(xml).toContain("生活");
+    for (const secret of ["PRIVATE_SENTINEL","PROTECTED_SENTINEL","ARCHIVED_SENTINEL","COMMENT_SENTINEL"]) {
+      expect(xml).not.toContain(secret);
+    }
+    const imageUrl = "https://flaremo.example/api/public/memos/e2e-public-memo/attachments/e2e-image/blob";
+    const image = await app.fetch(new Request(imageUrl), env);
+    expect(image.status).toBe(200);
+    expect(new Uint8Array(await image.arrayBuffer())).toEqual(new Uint8Array([1,2,3]));
+    await createDb(env.DB).update(memos).set({ visibility: "private" }).where(eq(memos.id, "memos/e2e-public-memo"));
+    expect((await app.fetch(new Request(imageUrl), env)).status).toBe(404);
+  });
+
+  it("rewrites local Markdown attachment URLs but leaves image-bed URLs intact", () => {
+    const content = ["\`\`\`","![code](/file/attachments/private/photo.png)","\`\`\`",
+      "![bed](https://img.hux.ink/a.webp)",
+      "![upload](/file/attachments/image/photo.png?thumbnail=true)"].join("\n");
+    const result = rewriteMemoFileUrls(content, "memo-1", "https://flaremo.example");
+    expect(result).toContain("/file/attachments/private/photo.png");
+    expect(result).toContain("https://img.hux.ink/a.webp");
+    expect(result).toContain("https://flaremo.example/api/public/memos/memo-1/attachments/image/blob?thumbnail=true");
   });
 
   it("registers the route on any createFlareMoApp instance", async () => {
