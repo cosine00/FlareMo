@@ -94,7 +94,9 @@ export async function handleTelegramWebhook(
     }),
     body: JSON.stringify({
       content,
-      visibility: "private",
+      // Local customization: this account publishes to the open web, so a
+      // forwarded Telegram message lands public like any other new note.
+      visibility: "public",
       source: "telegram",
       payload: {
         tags: ["telegram"],

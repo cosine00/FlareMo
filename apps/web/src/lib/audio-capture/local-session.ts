@@ -19,7 +19,9 @@ export function newLocalCapture(): LocalCapture {
     startedAt: Date.now(),
     duration: 0,
     tags: ["voice"],
-    visibility: "private",
+    // Local customization: voice notes publish to the open web by default,
+    // matching what the composer does for typed notes.
+    visibility: "public",
     gap: false,
   };
 }
@@ -50,7 +52,7 @@ export class CaptureDraftStore {
       saveMemoDraft(
         {
           content,
-          visibility: "private",
+          visibility: value.visibility,
           tags: ["voice"],
           files: [],
           clientId: value.clientId,

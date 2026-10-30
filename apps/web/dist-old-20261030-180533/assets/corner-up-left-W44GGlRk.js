@@ -1,0 +1,1 @@
+import{An as e}from"./store-BTp1GrgE.js";var t={name:`corner-up-left`,size:24,node:[[`path`,{d:`M20 20v-7a4 4 0 0 0-4-4H4`,key:`1nkjon`}],[`path`,{d:`M9 14 4 9l5-5`,key:`102s5s`}]]};t.node;var n=e(t);export{n as t};

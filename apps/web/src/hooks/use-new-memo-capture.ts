@@ -40,7 +40,9 @@ export function useNewMemoCapture(
 ): UseNewMemoCaptureResult {
   const draftId = options.draftId ?? DEFAULT_NEW_MEMO_DRAFT_ID;
   const debounceMs = options.debounceMs ?? 500;
-  const initialVisibility = options.initialVisibility ?? "private";
+  // Local customization: the account default is public, so a composer that
+  // gets no explicit preference still starts on the open web.
+  const initialVisibility = options.initialVisibility ?? "public";
   const [draft, setDraftState] = useState<MemoCaptureInput>(() =>
     emptyCapture(initialVisibility),
   );

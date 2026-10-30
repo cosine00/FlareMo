@@ -1,0 +1,1 @@
+function e(e,t){let n=new Date(e);return Number.isNaN(n.getTime())?e:n.toLocaleDateString(t,{year:`numeric`,month:`short`,day:`numeric`})}function t(e,t){return new Intl.DateTimeFormat(t,{dateStyle:`medium`,timeStyle:`short`}).format(new Date(e))}function n(e){return new Date(e).toLocaleString()}export{t as n,n as r,e as t};

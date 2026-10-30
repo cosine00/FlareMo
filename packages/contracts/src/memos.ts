@@ -64,7 +64,10 @@ export const memoPayloadSchema = z
 
 export const createMemoSchema = z.object({
   content: z.string().trim().min(1).max(100_000),
-  visibility: memoVisibilitySchema.default("private"),
+  // Local customization: this account publishes to the open web, so a create
+  // request that omits visibility lands public instead of private. It keeps
+  // every writer (web, API, MCP, Telegram, imports) on the same default.
+  visibility: memoVisibilitySchema.default("public"),
   payload: memoPayloadSchema.optional(),
   source: z.string().trim().min(1).max(64).default("web"),
 });

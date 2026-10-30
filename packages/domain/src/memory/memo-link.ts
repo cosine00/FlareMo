@@ -113,7 +113,9 @@ export async function promoteMemoryToMemo(
     user,
     {
       content: memory.content,
-      visibility: "private",
+      // Local customization: the account default is public, so a promoted
+      // memory becomes a public memo without an extra step.
+      visibility: "public",
       source: "memory",
     },
     scope,
