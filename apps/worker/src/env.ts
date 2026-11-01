@@ -38,6 +38,11 @@ export type FlareMoEnv = Env & {
   FLAREMO_RECOVERY_SECRET?: string;
   FLAREMO_PUBLIC_URL?: string;
   FLAREMO_MEMO_FEED_BLOG_URL?: string;
+  // Optional GitHub Actions dispatch for the Hugo public-Memo sync.
+  // Store the token as a Worker secret; repository/ref are non-secret config.
+  FLAREMO_MEMO_SYNC_GITHUB_TOKEN?: string;
+  FLAREMO_MEMO_SYNC_GITHUB_REPOSITORY?: string;
+  FLAREMO_MEMO_SYNC_GITHUB_REF?: string;
   FLAREMO_TRUSTED_ORIGINS?: string;
   // Local customization: public image bed. `IMAGES` is an extra R2 binding
   // (the bucket published at FLAREMO_IMAGE_BED_URL) that POST /api/v1/images

@@ -22,6 +22,7 @@ import {
 } from "./context";
 import { createEmbeddingProvider, createVectorIndex } from "./embedding";
 import type { FlareMoEnv } from "./env";
+import { dispatchMemoBlogSync } from "./memo-blog-sync";
 import { jsonError } from "./http";
 import { resolveOauthIntegration } from "./integrations/config";
 import { betterAuthRateLimitBucket, rateLimitGuard } from "./rate-limit";
@@ -494,6 +495,13 @@ export function createFlareMoWorker(
             hasCustomUserPlanLimits,
           ).catch((error) =>
             logBackgroundTaskFailure("embedding_outbox", error),
+          ),
+        );
+        // The blog re-reads the complete public feed; no Memo content or
+        // attachment URL is sent to GitHub.
+        ctx?.waitUntil(
+          dispatchMemoBlogSync(env, request, response).catch((error) =>
+            logBackgroundTaskFailure("memo_blog_sync", error),
           ),
         );
       }
