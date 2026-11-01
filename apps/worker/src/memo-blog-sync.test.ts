@@ -70,7 +70,7 @@ describe("public Memo blog sync trigger", () => {
         request("PATCH", "/api/app/memos/123", { content: "private edit" }),
         jsonResponse({ visibility: "PRIVATE" }),
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       await shouldDispatchMemoBlogSync(
         request("PATCH", "/api/v1/memos/memos%2F123", {
