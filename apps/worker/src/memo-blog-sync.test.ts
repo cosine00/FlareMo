@@ -58,7 +58,7 @@ describe("public Memo blog sync trigger", () => {
     ).toBe(false);
   });
 
-  it("dispatches public edits and visibility changes, but not private content edits", async () => {
+  it("dispatches edits and visibility changes so public-to-private transitions are removed", async () => {
     expect(
       await shouldDispatchMemoBlogSync(
         request("PATCH", "/api/v1/memos/memos%2F123", { content: "edit" }),
