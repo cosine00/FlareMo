@@ -106,17 +106,6 @@ function visibilityOf(value: unknown): string {
     : "";
 }
 
-async function requestHasVisibilityField(request: Request): Promise<boolean> {
-  try {
-    const body: unknown = await request.clone().json();
-    if (!isRecord(body)) return false;
-    const memo = isRecord(body.memo) ? body.memo : body;
-    return Object.prototype.hasOwnProperty.call(memo, "visibility");
-  } catch {
-    return false;
-  }
-}
-
 async function responseHasAttachedMemo(response: Response): Promise<boolean> {
   const value = await responseJson(response);
   if (!isRecord(value)) return false;
@@ -155,24 +144,13 @@ export async function shouldDispatchMemoBlogSync(
       }
       return visibilityOf(await responseJson(response)) === "PUBLIC";
     }
-    case "update": {
-      const visibility = visibilityOf(await responseJson(response));
-      if (visibility === "PUBLIC") return true;
-      return requestHasVisibilityField(request);
-    }
-    case "connect-update": {
-      if (
-        !response.headers
-          .get("content-type")
-          ?.toLowerCase()
-          .includes("json")
-      ) {
-        return true;
-      }
-      const visibility = visibilityOf(await responseJson(response));
-      if (visibility === "PUBLIC") return true;
-      return requestHasVisibilityField(request);
-    }
+    case "update":
+    case "connect-update":
+      // The update may be PUBLIC -> PRIVATE/PROTECTED. Always refresh after
+      // a successful update; the blog's strict PUBLIC filter decides what
+      // remains visible. This also avoids trying to clone a request body that
+      // the route handler has already consumed.
+      return true;
     case "delete":
     case "restore":
     case "memo-attachments":
