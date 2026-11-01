@@ -113,6 +113,10 @@
     "FLAREMO_PUBLIC_URL": "",
     // Destination for public Memo RSS links in the Hugo Memos timeline.
     "FLAREMO_MEMO_FEED_BLOG_URL": "https://hux.ink/bb/",
+    // Optional publish-triggered Hugo sync. Keep the PAT in a Worker secret:
+    // pnpm exec wrangler secret put FLAREMO_MEMO_SYNC_GITHUB_TOKEN
+    "FLAREMO_MEMO_SYNC_GITHUB_REPOSITORY": "cosine00/hug00",
+    "FLAREMO_MEMO_SYNC_GITHUB_REF": "master",
     // Optional comma-separated additional browser origins for trusted clients.
     "FLAREMO_TRUSTED_ORIGINS": "",
     // Optional Web Push reminders (daily review, overdue tasks). Generate a
