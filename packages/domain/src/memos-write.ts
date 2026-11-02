@@ -11,6 +11,7 @@ import {
   hourlyCountStatements,
 } from "./memo-hourly-counts";
 import { syncTasksFromMemoLines } from "./memo-task-sync";
+import { getDefaultMemoVisibility } from "./memo-visibility";
 import {
   assertMemoContentSize,
   hasUncheckedTaskList,
@@ -44,6 +45,11 @@ export async function createMemo(
   }
   assertMemoContentSize(input.content);
   await assertMemoCountQuota(db, scope?.userLimits, user.id);
+  // A create request that omits visibility means "my default", not "public":
+  // the account preference is authoritative so web, API, MCP and IM writers
+  // cannot drift apart. An explicit request value always wins.
+  const visibility =
+    input.visibility ?? (await getDefaultMemoVisibility(db, user));
   const now = new Date().toISOString();
   const payload = normalizeMemoPayload(input.payload);
   const clientId = normalizeMemoClientId(payload.client_id);
@@ -64,9 +70,9 @@ export async function createMemo(
   const row = {
     id: await allocateMemoId(db),
     userId: user.id,
-    teamId: resolveMemoTeamId(user, input.visibility),
+    teamId: resolveMemoTeamId(user, visibility),
     content: input.content,
-    visibility: input.visibility,
+    visibility,
     status: "normal" as const,
     pinned: false,
     source: input.source,

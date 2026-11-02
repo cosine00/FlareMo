@@ -15,6 +15,7 @@ import {
 import { AccountProfileSection } from "./account-profile-section";
 import { AccountTokensSection } from "./account-tokens-section";
 import { SettingsSectionGroup } from "./apple-settings-ui";
+import { DefaultVisibilitySection } from "./default-visibility-section";
 
 export { MIN_PASSWORD_LENGTH } from "./account-panel-presets";
 
@@ -215,7 +216,10 @@ export function AccountPanel({
         />
       </SettingsSectionGroup>
 
-      {/* 2. Personal Access Tokens */}
+      {/* 2. Composer default */}
+      <DefaultVisibilitySection t={t} />
+
+      {/* 3. Personal Access Tokens */}
       <AccountTokensSection
         copied={copied}
         createTokenIsPending={createTokenIsPending}

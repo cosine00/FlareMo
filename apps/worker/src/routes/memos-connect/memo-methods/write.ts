@@ -11,6 +11,7 @@ import type { FlareMoEnv } from "../../../env";
 import { CompatValidationError } from "../../../memos-compat/errors";
 import {
   compatMemoVisibility,
+  optionalCompatMemoVisibility,
   splitUpdateMaskFields,
 } from "../../../memos-compat/parsing";
 import { compatMemoPayload } from "../../../memos-compat/payload";
@@ -29,7 +30,7 @@ export async function createConnectMemo(
     context.user,
     {
       content: requiredString(memo.content, "memo.content"),
-      visibility: compatMemoVisibility(memo.visibility),
+      visibility: optionalCompatMemoVisibility(memo.visibility),
       payload: compatMemoPayload(memo),
       source: "memos-connect",
     },

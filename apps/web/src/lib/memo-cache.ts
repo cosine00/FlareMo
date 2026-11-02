@@ -65,7 +65,7 @@ export function prependOptimisticMemo(
     name: id,
     id,
     content: input.content,
-    visibility: input.visibility ?? "public",
+    visibility: input.visibility,
     state: "normal",
     pinned: false,
     payload: {

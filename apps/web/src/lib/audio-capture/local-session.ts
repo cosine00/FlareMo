@@ -11,7 +11,9 @@ export type { LocalCapture };
 export function captureDraftId(userId: string) {
   return `voice:${userId}:${getNewMemoDraftId()}`;
 }
-export function newLocalCapture(): LocalCapture {
+export function newLocalCapture(
+  visibility: LocalCapture["visibility"] = "public",
+): LocalCapture {
   return {
     version: 1,
     clientId: createMemoCaptureClientId(),
@@ -19,9 +21,10 @@ export function newLocalCapture(): LocalCapture {
     startedAt: Date.now(),
     duration: 0,
     tags: ["voice"],
-    // Local customization: voice notes publish to the open web by default,
-    // matching what the composer does for typed notes.
-    visibility: "public",
+    // Voice notes follow the account's default visibility, the same as typed
+    // notes; the caller passes it in from the preference query. The public
+    // default only covers callers that have not loaded the preference yet.
+    visibility,
     gap: false,
   };
 }

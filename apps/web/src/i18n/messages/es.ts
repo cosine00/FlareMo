@@ -329,7 +329,8 @@ const messages = {
   "editor.keepImage": "Conservar esta imagen",
   "editor.imageMarkedForDeletion": "Se eliminará al guardar",
   "editor.addImages": "Añadir imágenes",
-  "editor.attachmentDeleteFailed": "No se pudieron eliminar algunas imágenes. Reintenta.",
+  "editor.attachmentDeleteFailed":
+    "No se pudieron eliminar algunas imágenes. Reintenta.",
   "attachment.unavailable":
     "El archivo no se pudo cargar; puede haber sido eliminado.",
   "visibility.private": "Solo yo",
@@ -586,6 +587,14 @@ const messages = {
   "settings.group.account": "Cuenta y seguridad",
   "settings.group.preferences": "Preferencias y servicios",
   "settings.group.admin": "Administración",
+  "settings.defaultVisibility.title":
+    "Visibilidad predeterminada de las notas nuevas",
+  "settings.defaultVisibility.description":
+    "Se aplica a las notas que crees a partir de ahora; las existentes conservan su visibilidad. Los clientes móviles leen el mismo ajuste.",
+  "settings.defaultVisibility.public": "Público",
+  "settings.defaultVisibility.protected": "Equipo",
+  "settings.defaultVisibility.private": "Privado",
+  "settings.defaultVisibility.saved": "Visibilidad predeterminada guardada",
   "settings.status.configured": "Configurado",
   "settings.status.notConfigured": "No configurado",
   "settings.status.envManaged": "Gestionado por entorno",

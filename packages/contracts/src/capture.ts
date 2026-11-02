@@ -72,7 +72,9 @@ export const localCaptureSchema = z.object({
   startedAt: z.number().nonnegative(),
   duration: z.number().nonnegative().max(86400),
   tags: z.array(z.string().max(64)).max(20),
-  visibility: z.enum(["private", "public"]),
+  // Mirrors memo visibility: a capture seeds the composer, so it has to carry
+  // the account's team tier too, not just personal/public.
+  visibility: z.enum(["private", "protected", "public"]),
   gap: z.boolean(),
 });
 export type LocalCapture = z.infer<typeof localCaptureSchema>;

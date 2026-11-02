@@ -51,6 +51,8 @@ export const queryKeys = {
     forSpace: (space: string | undefined) => ["tag-hierarchy", space] as const,
   },
   currentUser: ["current-flaremo-user"] as const,
+  /** Per-account composer preferences (currently the default visibility). */
+  accountPreferences: ["account-preferences"] as const,
   adminUsers: ["admin-users"] as const,
   adminBranding: ["admin-branding"] as const,
   /**

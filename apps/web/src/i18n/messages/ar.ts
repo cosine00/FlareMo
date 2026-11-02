@@ -567,6 +567,13 @@ const messages = {
   "settings.group.account": "الحساب والأمان",
   "settings.group.preferences": "التفضيلات والخدمات",
   "settings.group.admin": "إدارة النظام",
+  "settings.defaultVisibility.title": "الظهور الافتراضي للمذكرات الجديدة",
+  "settings.defaultVisibility.description":
+    "يُطبَّق على المذكرات التي تنشئها من الآن؛ المذكرات الحالية تحتفظ بظهورها. تقرأ تطبيقات الهاتف الإعداد نفسه.",
+  "settings.defaultVisibility.public": "عام",
+  "settings.defaultVisibility.protected": "الفريق",
+  "settings.defaultVisibility.private": "خاص",
+  "settings.defaultVisibility.saved": "تم حفظ الظهور الافتراضي",
   "settings.status.configured": "تم التكوين",
   "settings.status.notConfigured": "غير مكوّن",
   "settings.status.envManaged": "مُدار بمتغيرات البيئة",

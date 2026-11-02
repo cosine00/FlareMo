@@ -64,10 +64,11 @@ export const memoPayloadSchema = z
 
 export const createMemoSchema = z.object({
   content: z.string().trim().min(1).max(100_000),
-  // Local customization: this account publishes to the open web, so a create
-  // request that omits visibility lands public instead of private. It keeps
-  // every writer (web, API, MCP, Telegram, imports) on the same default.
-  visibility: memoVisibilitySchema.default("public"),
+  // Visibility is resolved per account by the domain layer when the request
+  // omits it, so every writer (web, API, MCP, Telegram, imports) starts on the
+  // same account default instead of a hard-coded tier. Leaving the field off
+  // is meaningful: it means "use my default", not "public".
+  visibility: memoVisibilitySchema.optional(),
   payload: memoPayloadSchema.optional(),
   source: z.string().trim().min(1).max(64).default("web"),
 });

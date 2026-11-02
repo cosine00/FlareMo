@@ -331,7 +331,8 @@ const messages = {
   "editor.keepImage": "Garder cette image",
   "editor.imageMarkedForDeletion": "Supprimé à l'enregistrement",
   "editor.addImages": "Ajouter des images",
-  "editor.attachmentDeleteFailed": "Certaines images n'ont pas pu être supprimées. Réessayez.",
+  "editor.attachmentDeleteFailed":
+    "Certaines images n'ont pas pu être supprimées. Réessayez.",
   "attachment.unavailable":
     "Le fichier n'a pas pu être chargé ; il a peut-être été supprimé.",
   "visibility.private": "Moi uniquement",
@@ -590,6 +591,14 @@ const messages = {
   "settings.group.account": "Compte et sécurité",
   "settings.group.preferences": "Préférences et services",
   "settings.group.admin": "Administration",
+  "settings.defaultVisibility.title":
+    "Visibilité par défaut des nouvelles notes",
+  "settings.defaultVisibility.description":
+    "S'applique aux notes créées à partir de maintenant ; les notes existantes conservent leur visibilité. Les clients mobiles lisent le même réglage.",
+  "settings.defaultVisibility.public": "Public",
+  "settings.defaultVisibility.protected": "Équipe",
+  "settings.defaultVisibility.private": "Privé",
+  "settings.defaultVisibility.saved": "Visibilité par défaut enregistrée",
   "settings.status.configured": "Configuré",
   "settings.status.notConfigured": "Non configuré",
   "settings.status.envManaged": "Géré par environnement",

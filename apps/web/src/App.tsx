@@ -360,7 +360,6 @@ export function FlareMoApp() {
                 <WorkspaceComposer
                   visible={view === "all" && !(isReader && space === "team")}
                   composeRequested={composeRequested}
-                  space={space}
                   tags={stats.tags}
                   captureAvailable={Boolean(captureStatusQuery.data?.available)}
                 />

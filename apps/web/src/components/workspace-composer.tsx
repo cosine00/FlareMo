@@ -1,10 +1,9 @@
 import type { MemoVisibility } from "@flaremo/contracts";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { MemoSpace } from "@/api";
-import { createShare } from "@/api";
+import { createShare, getAccountPreferences } from "@/api";
 import { MemoComposer } from "@/components/memo-composer";
 import { useMemoMutations } from "@/hooks/use-memo-mutations";
 import { useNewMemoCapture } from "@/hooks/use-new-memo-capture";
@@ -31,42 +30,12 @@ import {
 import { queryKeys } from "@/lib/query-keys";
 import { stripResourceName } from "@/lib/utils";
 
-// Local customization: this account publishes to the open web by default, so the
-// composer starts on "public" and a fresh note needs no extra click. Picking
-// personal/team is a one-shot override for that single note — it is deliberately
-// not remembered — and the next note is public again. Only "public" is ever
-// stored, so the account default cannot drift.
-const VISIBILITY_PREF_KEY = "flaremo.composer.visibility";
-const DEFAULT_COMPOSER_VISIBILITY: MemoVisibility = "public";
-
-type VisibilityPref = Partial<Record<MemoSpace, MemoVisibility>>;
-
-function readVisibilityPref(): VisibilityPref {
-  try {
-    const raw = localStorage.getItem(VISIBILITY_PREF_KEY);
-    const parsed = raw ? (JSON.parse(raw) as VisibilityPref) : null;
-    if (!parsed || typeof parsed !== "object") return {};
-    // Drop anything an earlier build remembered (private/protected): those were
-    // "sticky picks", the opposite of what this account wants.
-    const pref: VisibilityPref = {};
-    for (const [space, visibility] of Object.entries(parsed)) {
-      if (visibility === DEFAULT_COMPOSER_VISIBILITY) {
-        pref[space as MemoSpace] = visibility;
-      }
-    }
-    return pref;
-  } catch {
-    return {};
-  }
-}
-
-function writeVisibilityPref(pref: VisibilityPref) {
-  try {
-    localStorage.setItem(VISIBILITY_PREF_KEY, JSON.stringify(pref));
-  } catch {
-    // Persistence is best-effort; the in-memory choice still applies.
-  }
-}
+// The default visibility belongs to the account, not to this browser: it is
+// stored server-side so the web composer, the API and MoeMemos all start from
+// the same tier. A per-note pick stays a one-shot override for that note. Until
+// the preference query resolves, keep the open-web default the instance has
+// always shipped with.
+const FALLBACK_COMPOSER_VISIBILITY: MemoVisibility = "public";
 
 // Keep draft updates and upload progress inside the capture boundary. This
 // component stays mounted across workspace filters so drafts and offline
@@ -74,23 +43,25 @@ function writeVisibilityPref(pref: VisibilityPref) {
 export const WorkspaceComposer = memo(function WorkspaceComposer({
   visible,
   composeRequested,
-  space,
   tags,
   captureAvailable,
 }: {
   visible: boolean;
   composeRequested: boolean;
-  space: MemoSpace;
   tags?: Array<{ name: string; count: number }>;
   captureAvailable?: boolean;
 }) {
   const { locale, t } = useI18n();
   const navigate = useNavigate({ from: "/" });
   const [newMemoDraftId] = useState(getNewMemoDraftId);
-  const [visibilityPref, setVisibilityPref] =
-    useState<VisibilityPref>(readVisibilityPref);
+  const preferencesQuery = useQuery({
+    queryKey: queryKeys.accountPreferences,
+    queryFn: getAccountPreferences,
+    staleTime: 5 * 60_000,
+  });
   const preferredVisibility =
-    visibilityPref[space] ?? DEFAULT_COMPOSER_VISIBILITY;
+    preferencesQuery.data?.default_memo_visibility ??
+    FALLBACK_COMPOSER_VISIBILITY;
   const capture = useNewMemoCapture({
     draftId: newMemoDraftId,
     initialVisibility: preferredVisibility,
@@ -316,17 +287,6 @@ export const WorkspaceComposer = memo(function WorkspaceComposer({
       tags={tags}
       captureAvailable={captureAvailable}
       onDraftChange={capture.updateDraft}
-      onVisibilityChange={(visibility) => {
-        // Only "public" is the remembered default. A personal/team pick applies
-        // to this note alone, so the next note starts public again; re-picking
-        // public just re-confirms the default.
-        if (visibility !== DEFAULT_COMPOSER_VISIBILITY) return;
-        setVisibilityPref((current) => {
-          const next = { ...current, [space]: visibility };
-          writeVisibilityPref(next);
-          return next;
-        });
-      }}
       onSubmit={handleCaptureSubmit}
       onSubmitArticle={handleArticleSubmit}
     />

@@ -30,7 +30,7 @@ import { CompatValidationError } from "../../memos-compat/errors";
 import { resolveMemoCreator } from "../../memos-compat/memo-creator";
 import {
   compatMemoRelationType,
-  compatMemoVisibility,
+  optionalCompatMemoVisibility,
 } from "../../memos-compat/parsing";
 import { compatMemoPayload } from "../../memos-compat/payload";
 import { normalizeMemoName } from "../../memos-compat/resource-names";
@@ -113,7 +113,7 @@ export function registerMemoRoutes(app: Hono<HonoBindings>) {
         context.user,
         {
           content: body.content.trim(),
-          visibility: compatMemoVisibility(body.visibility),
+          visibility: optionalCompatMemoVisibility(body.visibility),
           payload: compatMemoPayload(body),
           source: "memos-api",
         },
@@ -166,18 +166,11 @@ export function registerMemoRoutes(app: Hono<HonoBindings>) {
       if (Object.keys(input).length === 0) {
         // Mask covered only server-owned fields; the rebound attachments
         // above are the whole update, so answer with the current memo.
-        return c.json(await getMemoByIdForViewer(
-          context.db,
-          context.user,
-          memoName,
-        ));
+        return c.json(
+          await getMemoByIdForViewer(context.db, context.user, memoName),
+        );
       }
-      const memo = await updateMemo(
-        context.db,
-        context.user,
-        memoName,
-        input,
-      );
+      const memo = await updateMemo(context.db, context.user, memoName, input);
       return c.json(await currentMemoWithDetails(context, memo));
     } catch (error) {
       return currentJsonError(c, error);

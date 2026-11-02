@@ -530,6 +530,13 @@ const messages = {
   "settings.group.account": "账户与安全",
   "settings.group.preferences": "偏好与服务",
   "settings.group.admin": "系统管理",
+  "settings.defaultVisibility.title": "新建笔记的默认可见性",
+  "settings.defaultVisibility.description":
+    "只影响之后新建的笔记，已有笔记的可见性不变。手机客户端读取的是同一个设置。",
+  "settings.defaultVisibility.public": "公开",
+  "settings.defaultVisibility.protected": "团队",
+  "settings.defaultVisibility.private": "私人",
+  "settings.defaultVisibility.saved": "默认可见性已保存",
   "settings.status.configured": "已配置",
   "settings.status.notConfigured": "未配置",
   "settings.status.envManaged": "环境变量配置",

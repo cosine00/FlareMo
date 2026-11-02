@@ -1,13 +1,13 @@
+import { memos, memoTags } from "@flaremo/db";
 import {
   createMemoComment,
   getAuthBootstrapStatus,
-  getStoredSetting,
+  getDefaultMemoVisibility,
   listMemoComments,
   NotFoundError,
-  upsertStoredSetting,
+  setDefaultMemoVisibility,
 } from "@flaremo/domain";
 import { currentMemoToDto } from "@flaremo/memos";
-import { memoTags, memos } from "@flaremo/db";
 import { and, count, eq, isNull } from "drizzle-orm";
 import type { Hono } from "hono";
 import {
@@ -15,8 +15,8 @@ import {
   getRequestContext,
   type HonoBindings,
 } from "../../context";
-import { resolveMemoCreator } from "../../memos-compat/memo-creator";
 import { currentJsonError } from "../../memos-compat/current-errors";
+import { resolveMemoCreator } from "../../memos-compat/memo-creator";
 import { normalizeMemoName } from "../../memos-compat/resource-names";
 import {
   assertCurrentUserPath,
@@ -37,21 +37,11 @@ import {
 /** MoeMemos only accepts 0.21.x (v0 wire) or 0.27.0-0.31.0 (v1 wire). */
 const CLIENT_COMPAT_VERSION = "0.27.2";
 
-const DEFAULT_VISIBILITY_KEY = "clients.defaultMemoVisibility";
-
-type VisibilityWire = "private" | "protected" | "public";
-
+/** Domain values to the Memos wire enum; LOCAL is the workspace tier. */
 function visibilityToProto(value: unknown): "PRIVATE" | "LOCAL" | "PUBLIC" {
   if (value === "private") return "PRIVATE";
   if (value === "protected") return "LOCAL";
   return "PUBLIC";
-}
-
-function visibilityFromProto(value: unknown): VisibilityWire {
-  const raw = String(value ?? "").toUpperCase();
-  if (raw === "PRIVATE") return "private";
-  if (raw === "LOCAL" || raw === "PROTECTED") return "protected";
-  return "public";
 }
 
 export function registerClientCompatRoutes(app: Hono<HonoBindings>) {
@@ -63,8 +53,7 @@ export function registerClientCompatRoutes(app: Hono<HonoBindings>) {
       return c.json({
         version: CLIENT_COMPAT_VERSION,
         demo: false,
-        instanceUrl:
-          c.env.FLAREMO_PUBLIC_URL ?? new URL(c.req.url).origin,
+        instanceUrl: c.env.FLAREMO_PUBLIC_URL ?? new URL(c.req.url).origin,
         needsSetup: bootstrap.state !== "complete",
       });
     } catch (error) {
@@ -81,18 +70,13 @@ export function registerClientCompatRoutes(app: Hono<HonoBindings>) {
       if (setting !== "GENERAL") {
         throw new NotFoundError(`Unsupported user setting: ${setting}`);
       }
-      const stored = await getStoredSetting(
+      const visibility = await getDefaultMemoVisibility(
         context.db,
         context.user,
-        DEFAULT_VISIBILITY_KEY,
       );
-      const visibility =
-        typeof stored?.value === "string" && stored.value
-          ? visibilityToProto(stored.value)
-          : "PUBLIC";
       return c.json({
         name: `${context.user.id}/settings/GENERAL`,
-        generalSetting: { memoVisibility: visibility },
+        generalSetting: { memoVisibility: visibilityToProto(visibility) },
       });
     } catch (error) {
       return currentJsonError(c, error);
@@ -108,32 +92,27 @@ export function registerClientCompatRoutes(app: Hono<HonoBindings>) {
       if (setting !== "GENERAL") {
         throw new NotFoundError(`Unsupported user setting: ${setting}`);
       }
-      const body = (await readCurrentJsonObject(c)) as Record<
-        string,
-        unknown
-      >;
+      const body = (await readCurrentJsonObject(c)) as Record<string, unknown>;
       const source = (body.userSetting ?? body) as Record<string, unknown>;
       const generalSetting = source.generalSetting as
         | Record<string, unknown>
         | undefined;
       const memoVisibility = generalSetting?.memoVisibility;
       if (typeof memoVisibility === "string" && memoVisibility.trim()) {
-        await upsertStoredSetting(
+        await setDefaultMemoVisibility(
           context.db,
           context.user,
-          DEFAULT_VISIBILITY_KEY,
-          visibilityFromProto(memoVisibility),
+          memoVisibility,
         );
       }
-      const stored = await getStoredSetting(
+      const visibility = await getDefaultMemoVisibility(
         context.db,
         context.user,
-        DEFAULT_VISIBILITY_KEY,
       );
       return c.json({
         name: `${context.user.id}/settings/GENERAL`,
         generalSetting: {
-          memoVisibility: visibilityToProto(stored?.value ?? "public"),
+          memoVisibility: visibilityToProto(visibility),
         },
       });
     } catch (error) {
@@ -146,10 +125,15 @@ export function registerClientCompatRoutes(app: Hono<HonoBindings>) {
     try {
       const context = await getOptionalRequestContext(c);
       const memoName = normalizeMemoName(c.req.param("memo"));
-      const result = await listMemoComments(context.db, context.user, memoName, {
-        pageSize: parsePageSize(c.req.query("pageSize"), 50),
-        pageToken: c.req.query("pageToken"),
-      });
+      const result = await listMemoComments(
+        context.db,
+        context.user,
+        memoName,
+        {
+          pageSize: parsePageSize(c.req.query("pageSize"), 50),
+          pageToken: c.req.query("pageToken"),
+        },
+      );
       return c.json({
         memos: await Promise.all(
           result.memos.map(async (memo) =>
@@ -168,10 +152,7 @@ export function registerClientCompatRoutes(app: Hono<HonoBindings>) {
   app.post("/memos/:memo/comments", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
-      const body = (await readCurrentJsonObject(c)) as Record<
-        string,
-        unknown
-      >;
+      const body = (await readCurrentJsonObject(c)) as Record<string, unknown>;
       const content =
         typeof body.content === "string" ? body.content : undefined;
       const context = await getRequestContext(c);

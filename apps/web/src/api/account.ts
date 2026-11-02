@@ -1,9 +1,27 @@
+import type { MemoVisibility } from "@flaremo/contracts";
 import { apiRequest } from "./client";
 import type {
   AdminUser,
   CurrentFlareMoUser,
   PersonalAccessToken,
 } from "./types";
+
+/** The visibility a new note starts on for this account. Server-owned so the
+ *  web composer and MoeMemos cannot disagree about it. */
+export type AccountPreferences = {
+  default_memo_visibility: MemoVisibility;
+};
+
+export async function getAccountPreferences() {
+  return apiRequest<AccountPreferences>("/api/app/account/preferences");
+}
+
+export async function updateAccountPreferences(input: AccountPreferences) {
+  return apiRequest<AccountPreferences>("/api/app/account/preferences", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
 
 export async function deleteAccount(currentPassword: string) {
   return apiRequest<{ ok: true }>("/api/app/account", {

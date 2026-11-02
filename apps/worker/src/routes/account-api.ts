@@ -5,11 +5,13 @@ import {
   deleteMemosPersonalAccessToken,
   ForbiddenError,
   finalizeFlaremoMemberRemoval,
+  getDefaultMemoVisibility,
   getMemosPersonalAccessToken,
   isFlaremoUserEmailTaken,
   isInstanceOwner,
   listMemosPersonalAccessTokens,
   NotFoundError,
+  setDefaultMemoVisibility,
   updateFlaremoUserEmail,
   updateMemberRemovalJob,
   ValidationError,
@@ -45,6 +47,46 @@ const changeEmailSchema = z.object({
 const deleteAccountSchema = z.object({
   current_password: z.string().min(1).max(128),
 });
+
+const updatePreferencesSchema = z.object({
+  default_memo_visibility: z.enum(["private", "protected", "public"]),
+});
+
+/** One key for both front ends: the web account page and the Memos
+ *  `settings/GENERAL` surface read the same stored row. */
+accountApi.get("/preferences", async (c) => {
+  try {
+    const context = await getBrowserRequestContext(c);
+    return c.json({
+      default_memo_visibility: await getDefaultMemoVisibility(
+        context.db,
+        context.user,
+      ),
+    });
+  } catch (error) {
+    return jsonError(c, error);
+  }
+});
+
+accountApi.patch(
+  "/preferences",
+  zValidator("json", updatePreferencesSchema),
+  async (c) => {
+    try {
+      const context = await getBrowserRequestContext(c);
+      const { default_memo_visibility } = c.req.valid("json");
+      return c.json({
+        default_memo_visibility: await setDefaultMemoVisibility(
+          context.db,
+          context.user,
+          default_memo_visibility,
+        ),
+      });
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  },
+);
 
 accountApi.get("/personal-access-tokens", async (c) => {
   try {

@@ -127,6 +127,17 @@ export function compatMemoVisibility(
   return normalized;
 }
 
+/**
+ * Create-time variant: an absent field is not an error, it asks the domain
+ * layer for the account default. Present-but-invalid still fails closed.
+ */
+export function optionalCompatMemoVisibility(
+  value: unknown,
+): "private" | "protected" | "public" | undefined {
+  if (value === undefined || value === null) return undefined;
+  return compatMemoVisibility(value);
+}
+
 /** Relation type to the legacy lowercase pair, failing closed on unknown input. */
 export function compatMemoRelationType(
   value: unknown,

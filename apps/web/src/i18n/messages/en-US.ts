@@ -323,7 +323,8 @@ const messages = {
   "editor.keepImage": "Keep this image",
   "editor.imageMarkedForDeletion": "Deleted on save",
   "editor.addImages": "Add images",
-  "editor.attachmentDeleteFailed": "Some images could not be deleted. Try again.",
+  "editor.attachmentDeleteFailed":
+    "Some images could not be deleted. Try again.",
   "attachment.unavailable":
     "The file failed to load; it may have been deleted.",
   "visibility.private": "Only me",
@@ -576,6 +577,13 @@ const messages = {
   "settings.group.account": "Account & Security",
   "settings.group.preferences": "Preferences & Services",
   "settings.group.admin": "Administration",
+  "settings.defaultVisibility.title": "Default visibility for new memos",
+  "settings.defaultVisibility.description":
+    "Applies to memos you create from now on; existing memos keep their visibility. Mobile clients read the same setting.",
+  "settings.defaultVisibility.public": "Public",
+  "settings.defaultVisibility.protected": "Team",
+  "settings.defaultVisibility.private": "Private",
+  "settings.defaultVisibility.saved": "Default visibility saved",
   "settings.status.configured": "Configured",
   "settings.status.notConfigured": "Not configured",
   "settings.status.envManaged": "Environment managed",

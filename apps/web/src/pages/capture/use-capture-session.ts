@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import {
   type Attachment,
   type createMemo,
+  getAccountPreferences,
   getCaptureStatus,
   getCurrentFlareMoUser,
 } from "@/api";
@@ -82,6 +83,15 @@ export function useCaptureSession() {
     retry: false,
   });
   const canManageVoiceService = meQuery.data?.can_manage_voice_service === true;
+  // Voice notes start on the account default, not on a hard-coded tier: a
+  // private-first account must never leak a recording as a public note.
+  const preferencesQuery = useQuery({
+    queryKey: queryKeys.accountPreferences,
+    queryFn: getAccountPreferences,
+    staleTime: 5 * 60_000,
+  });
+  const defaultVisibility =
+    preferencesQuery.data?.default_memo_visibility ?? "public";
   const [controller] = useState(
     () =>
       new CaptureController({
@@ -296,9 +306,9 @@ export function useCaptureSession() {
     uploadedAudioRef.current = null;
     audioBoundRef.current = false;
     transcript.current.reset();
-    setLocal(newLocalCapture());
+    setLocal(newLocalCapture(defaultVisibility));
     void controller.start();
-  }, [controller.start]);
+  }, [controller.start, defaultVisibility]);
   // Page-level Enter drives start/stop/resume while the page owns focus.
   // Space is deliberately unbound (scroll conflict); fields and buttons keep
   // their native Enter behavior, and open dialogs win.
@@ -350,7 +360,7 @@ export function useCaptureSession() {
     controller.reset();
     setReview(false);
     setRecovery(null);
-    setLocal(newLocalCapture());
+    setLocal(newLocalCapture(defaultVisibility));
     setSaveError(false);
     setDraftError(false);
     setCleanupError(false);

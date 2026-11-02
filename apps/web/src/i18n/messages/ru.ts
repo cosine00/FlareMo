@@ -328,7 +328,8 @@ const messages = {
   "editor.keepImage": "Оставить это изображение",
   "editor.imageMarkedForDeletion": "Будет удалено при сохранении",
   "editor.addImages": "Добавить изображения",
-  "editor.attachmentDeleteFailed": "Не удалось удалить некоторые изображения. Повторите попытку.",
+  "editor.attachmentDeleteFailed":
+    "Не удалось удалить некоторые изображения. Повторите попытку.",
   "attachment.unavailable": "Файл не загрузился; возможно, он был удалён.",
   "visibility.private": "Только я",
   "visibility.protected": "Команда",
@@ -580,6 +581,13 @@ const messages = {
   "settings.group.account": "Учетная запись и безопасность",
   "settings.group.preferences": "Настройки и службы",
   "settings.group.admin": "Управление системой",
+  "settings.defaultVisibility.title": "Видимость новых заметок по умолчанию",
+  "settings.defaultVisibility.description":
+    "Применяется к заметкам, созданным с этого момента; у существующих видимость не меняется. Мобильные клиенты читают ту же настройку.",
+  "settings.defaultVisibility.public": "Публичная",
+  "settings.defaultVisibility.protected": "Команда",
+  "settings.defaultVisibility.private": "Личная",
+  "settings.defaultVisibility.saved": "Видимость по умолчанию сохранена",
   "settings.status.configured": "Настроено",
   "settings.status.notConfigured": "Не настроено",
   "settings.status.envManaged": "Управляется переменными окружения",

@@ -323,7 +323,8 @@ const messages = {
   "editor.keepImage": "이 이미지 유지",
   "editor.imageMarkedForDeletion": "저장 시 삭제",
   "editor.addImages": "이미지 추가",
-  "editor.attachmentDeleteFailed": "일부 이미지를 삭제하지 못했습니다. 다시 시도해 주세요",
+  "editor.attachmentDeleteFailed":
+    "일부 이미지를 삭제하지 못했습니다. 다시 시도해 주세요",
   "attachment.unavailable":
     "파일을 불러오지 못했습니다. 삭제되었을 수 있습니다.",
   "visibility.private": "나만 보기",
@@ -575,6 +576,13 @@ const messages = {
   "settings.group.account": "계정 및 보안",
   "settings.group.preferences": "기본 설정 및 서비스",
   "settings.group.admin": "시스템 관리",
+  "settings.defaultVisibility.title": "새 메모의 기본 공개 범위",
+  "settings.defaultVisibility.description":
+    "앞으로 만드는 메모에 적용됩니다. 기존 메모의 공개 범위는 바뀌지 않으며, 모바일 앱도 같은 설정을 읽습니다.",
+  "settings.defaultVisibility.public": "공개",
+  "settings.defaultVisibility.protected": "팀",
+  "settings.defaultVisibility.private": "비공개",
+  "settings.defaultVisibility.saved": "기본 공개 범위를 저장했습니다",
   "settings.status.configured": "구성됨",
   "settings.status.notConfigured": "구성되지 않음",
   "settings.status.envManaged": "환경 변수 관리",

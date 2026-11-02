@@ -324,7 +324,8 @@ const messages = {
   "editor.keepImage": "この画像を保持",
   "editor.imageMarkedForDeletion": "保存時に削除",
   "editor.addImages": "画像を追加",
-  "editor.attachmentDeleteFailed": "一部の画像を削除できませんでした。再試行してください",
+  "editor.attachmentDeleteFailed":
+    "一部の画像を削除できませんでした。再試行してください",
   "attachment.unavailable":
     "ファイルを読み込めませんでした。削除された可能性があります。",
   "visibility.private": "自分のみ",
@@ -576,6 +577,13 @@ const messages = {
   "settings.group.account": "アカウントとセキュリティ",
   "settings.group.preferences": "環境設定とサービス",
   "settings.group.admin": "システム管理",
+  "settings.defaultVisibility.title": "新しいメモの既定の公開範囲",
+  "settings.defaultVisibility.description":
+    "今後作成するメモに適用されます。既存のメモの公開範囲は変わりません。モバイルアプリも同じ設定を読みます。",
+  "settings.defaultVisibility.public": "公開",
+  "settings.defaultVisibility.protected": "チーム",
+  "settings.defaultVisibility.private": "非公開",
+  "settings.defaultVisibility.saved": "既定の公開範囲を保存しました",
   "settings.status.configured": "設定済み",
   "settings.status.notConfigured": "未設定",
   "settings.status.envManaged": "環境変数管理",
