@@ -269,6 +269,9 @@ const messages = {
   "sidebar.expand": "展开侧栏",
   "composer.ariaLabel": "新记录",
   "composer.placeholder": "现在的想法是…",
+
+  "composer.richEditorFallback":
+    "富文本编辑器初始化失败，已切换为纯文本编辑；内容不会丢失，改完直接保存即可。",
   "composer.addAttachment": "添加附件",
   "composer.addTag": "添加标签",
   "composer.bulletList": "列表",

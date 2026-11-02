@@ -19,6 +19,10 @@ import {
 } from "@/components/composer/format-actions";
 import { VoiceCaptureBar } from "@/components/composer/voice-capture-bar";
 import { RichComposerEditor } from "@/components/rich-composer-editor-lazy";
+import {
+  PlainTextEditorFallback,
+  RichComposerErrorBoundary,
+} from "@/components/rich-composer-safe";
 import { useComposerSuggestions } from "@/hooks/use-composer-suggestions";
 import { useComposerVoice } from "@/hooks/use-composer-voice";
 import { useInlineImageUploads } from "@/hooks/use-inline-image-uploads";
@@ -213,23 +217,38 @@ export function MemoComposer({
       }}
     >
       <Suspense fallback={<ComposerEditorSkeleton />}>
-        <RichComposerEditor
-          ariaLabel={t("composer.ariaLabel")}
-          content={draft.content}
-          disabled={isPending}
-          editorRef={editorRef}
-          onContentChange={updateContent}
-          onImageFiles={enqueueInlineUploads}
-          onTagTokenChange={tags ? setActiveTagToken : undefined}
-          onWikiLinkTokenChange={setActiveWikiToken}
-          onSuggestionKeyDown={handleSuggestionKeyDown}
-          onTransaction={syncActiveFormats}
-          formatMenu="note"
-          onSubmitRequest={() => {
-            if (!isUploadingImages && !voiceActive) void submit();
-          }}
-          placeholder={t("composer.placeholder")}
-        />
+        <RichComposerErrorBoundary
+          fallback={
+            <PlainTextEditorFallback
+              ariaLabel={t("composer.ariaLabel")}
+              content={draft.content}
+              disabled={isPending}
+              placeholder={t("composer.placeholder")}
+              onContentChange={updateContent}
+              onSubmitRequest={() => {
+                if (!isUploadingImages && !voiceActive) void submit();
+              }}
+            />
+          }
+        >
+          <RichComposerEditor
+            ariaLabel={t("composer.ariaLabel")}
+            content={draft.content}
+            disabled={isPending}
+            editorRef={editorRef}
+            onContentChange={updateContent}
+            onImageFiles={enqueueInlineUploads}
+            onTagTokenChange={tags ? setActiveTagToken : undefined}
+            onWikiLinkTokenChange={setActiveWikiToken}
+            onSuggestionKeyDown={handleSuggestionKeyDown}
+            onTransaction={syncActiveFormats}
+            formatMenu="note"
+            onSubmitRequest={() => {
+              if (!isUploadingImages && !voiceActive) void submit();
+            }}
+            placeholder={t("composer.placeholder")}
+          />
+        </RichComposerErrorBoundary>
       </Suspense>
       {voiceActive && (
         <VoiceCaptureBar

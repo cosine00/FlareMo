@@ -303,6 +303,9 @@ const messages = {
   "sidebar.expand": "Mostrar barra lateral",
   "composer.ariaLabel": "Nota nueva",
   "composer.placeholder": "Escribe algo para tu yo del futuro…",
+
+  "composer.richEditorFallback":
+    "El editor enriquecido no se inició; se edita como texto plano. No se pierde nada: edita y guarda con normalidad.",
   "composer.addAttachment": "Agregar adjunto",
   "composer.addTag": "Agregar etiqueta",
   "composer.bulletList": "Lista",

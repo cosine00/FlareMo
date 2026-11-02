@@ -195,6 +195,15 @@ export function MemoImageGallery({
       height={size?.height}
       loading="lazy"
       role={onOpenImage ? "button" : undefined}
+      ref={(element) => {
+        // A cached image can complete before React attaches onLoad, and a
+        // missed load event means the ratio never arrives — the gallery would
+        // sit in its one-picture-per-line pending state forever. Elements that
+        // are already decoded report themselves here instead.
+        if (element?.complete && element.naturalWidth > 0) {
+          handleRatio(image.src, element);
+        }
+      }}
       src={image.src}
       style={size}
       tabIndex={onOpenImage ? 0 : undefined}

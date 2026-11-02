@@ -301,6 +301,9 @@ const messages = {
   "sidebar.expand": "Развернуть боковую панель",
   "composer.ariaLabel": "Новая заметка",
   "composer.placeholder": "Запишите что-нибудь для себя будущего…",
+
+  "composer.richEditorFallback":
+    "Форматированный редактор не запустился, редактирование в простом тексте. Ничего не потеряно — правьте и сохраняйте как обычно.",
   "composer.addAttachment": "Прикрепить файл",
   "composer.addTag": "Добавить тег",
   "composer.bulletList": "Список",

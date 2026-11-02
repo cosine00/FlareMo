@@ -22,3 +22,34 @@ describe("MemoContent", () => {
     expect(html).toContain("<p>第一段</p>\n<p>第二段</p>");
   });
 });
+
+describe("MemoContent image grouping", () => {
+  const URL_A = "https://img.hux.ink/image/2026/11/IMG_7163-47187a.jpg";
+  const URL_B = "https://img.hux.ink/image/2026/11/IMG_7226-9098af.jpg";
+
+  it("merges prose plus blank-line-separated picture paragraphs into a gallery", () => {
+    const raw = [
+      "之前旧台式机的机箱太大了，选了一款小机箱来换。",
+      "",
+      `![IMG_7163.jpeg](${URL_A})`,
+      "",
+      `![IMG_7226.jpeg](${URL_B})`,
+    ].join("\n");
+    const html = renderToStaticMarkup(<MemoContent content={raw} />);
+    expect(html).toContain("memo-image-gallery");
+    expect(html).toContain(`src="${URL_A}"`);
+    expect(html).toContain(`src="${URL_B}"`);
+  });
+
+  it("merges consecutive picture paragraphs without prose", () => {
+    const raw = `![A](${URL_A})\n\n![B](${URL_B})`;
+    const html = renderToStaticMarkup(<MemoContent content={raw} />);
+    expect(html).toContain("memo-image-gallery");
+  });
+
+  it("merges pictures written with single newlines", () => {
+    const raw = `![A](${URL_A})\n![B](${URL_B})`;
+    const html = renderToStaticMarkup(<MemoContent content={raw} />);
+    expect(html).toContain("memo-image-gallery");
+  });
+});

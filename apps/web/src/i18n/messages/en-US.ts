@@ -297,6 +297,9 @@ const messages = {
   "sidebar.expand": "Expand sidebar",
   "composer.ariaLabel": "New note",
   "composer.placeholder": "What's on your mind…",
+
+  "composer.richEditorFallback":
+    "The rich editor failed to start, so this is plain-text editing. Nothing is lost — edit and save as usual.",
   "composer.addAttachment": "Add attachment",
   "composer.addTag": "Add tag",
   "composer.bulletList": "Bullet list",

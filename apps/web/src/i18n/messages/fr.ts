@@ -304,6 +304,9 @@ const messages = {
   "sidebar.expand": "Afficher la barre latérale",
   "composer.ariaLabel": "Nouvelle note",
   "composer.placeholder": "Écrivez pour votre futur vous…",
+
+  "composer.richEditorFallback":
+    "L'éditeur enrichi n'a pas démarré ; édition en texte brut. Rien n'est perdu — modifiez et enregistrez normalement.",
   "composer.addAttachment": "Ajouter une pièce jointe",
   "composer.addTag": "Ajouter un tag",
   "composer.bulletList": "Liste",

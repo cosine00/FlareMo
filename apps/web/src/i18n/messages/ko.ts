@@ -297,6 +297,9 @@ const messages = {
   "sidebar.expand": "사이드바 펼치기",
   "composer.ariaLabel": "새 노트",
   "composer.placeholder": "미래의 나에게 남길 한마디를 적어 보세요…",
+
+  "composer.richEditorFallback":
+    "리치 에디터 초기화에 실패하여 일반 텍스트로 편집합니다. 내용은 사라지지 않으니 그대로 저장하면 됩니다.",
   "composer.addAttachment": "첨부 파일 추가",
   "composer.addTag": "태그 추가",
   "composer.bulletList": "목록",

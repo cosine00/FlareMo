@@ -297,6 +297,9 @@ const messages = {
   "sidebar.expand": "サイドバーを表示",
   "composer.ariaLabel": "新規ノート",
   "composer.placeholder": "未来の自分へ、何か書き残そう…",
+
+  "composer.richEditorFallback":
+    "リッチエディターの初期化に失敗したため、プレーンテキストで編集しています。内容は失われません。そのまま保存できます。",
   "composer.addAttachment": "添付ファイルを追加",
   "composer.addTag": "タグを追加",
   "composer.bulletList": "リスト",

@@ -293,6 +293,9 @@ const messages = {
   "sidebar.expand": "إظهار الشريط الجانبي",
   "composer.ariaLabel": "ملاحظة جديدة",
   "composer.placeholder": "اكتب شيئًا لنفسك في المستقبل…",
+
+  "composer.richEditorFallback":
+    "تعذّر تشغيل المحرر المنسّق، لذا التحرير بنص عادي. لم يُفقد أي محتوى — عدّل واحفظ كالمعتاد.",
   "composer.addAttachment": "إضافة مرفق",
   "composer.addTag": "إضافة وسم",
   "composer.bulletList": "قائمة",
