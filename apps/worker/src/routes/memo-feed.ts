@@ -100,11 +100,11 @@ export function registerMemoFeed(app: Hono<HonoBindings>): void {
           eq(memos.visibility, "public"),
           eq(memos.status, "normal"),
           isNull(memos.deletedAt),
-          sql\`NOT EXISTS (
-            SELECT 1 FROM \${memoRelations}
-            WHERE \${memoRelations.memoId} = \${memos.id}
-              AND \${memoRelations.type} = 'comment'
-          )\`,
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${memoRelations}
+            WHERE ${memoRelations.memoId} = ${memos.id}
+              AND ${memoRelations.type} = 'comment'
+          )`,
         ),
       )
       .orderBy(desc(memos.createdAt), desc(memos.id))
@@ -152,13 +152,18 @@ export function registerMemoFeed(app: Hono<HonoBindings>): void {
         { async: false },
       );
       const guid = "urn:flaremo:memo:" + memoId;
+      // The Hugo timeline renders every entry as #memo-<id> (bb-focus.js),
+      // and bb-comments.js resolves that fragment for commenting, so a feed
+      // reader can deep-link straight to the memo instead of the top page.
+      const memoLink =
+        (blogBaseUrl.endsWith("/") ? blogBaseUrl : blogBaseUrl + "/") +
+        "#memo-" +
+        memoId;
 
       feed.addItem({
         title,
         id: guid,
-        // The current Hugo Memos timeline has no per-entry anchor yet.
-        // Link to the timeline itself rather than emitting a broken fragment.
-        link: blogBaseUrl,
+        link: memoLink,
         description: truncate(plainText, 200),
         content: contentHtml,
         date: new Date(memo.updatedAt || memo.createdAt),
