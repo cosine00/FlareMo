@@ -1130,4 +1130,142 @@ export const mcpPaths = {
       },
     }),
   },
+  "/api/v1/instance/profile": {
+    get: {
+      operationId: "getInstanceProfile",
+      summary: "Get the instance profile (Memos client login handshake)",
+      tags: ["Instance"],
+      // Anonymous: clients read the version before they have a token.
+      security: [],
+      responses: {
+        "200": response("Instance profile.", {
+          type: "object",
+          properties: {
+            version: { type: "string", example: "0.27.2" },
+            demo: { type: "boolean" },
+            instanceUrl: { type: "string" },
+            needsSetup: { type: "boolean" },
+          },
+        }),
+      },
+    },
+  },
+  "/api/v1/users/{user}/settings/{setting}": {
+    get: secured({
+      operationId: "getUserSetting",
+      summary: "Get a per-user setting block",
+      tags: ["Users"],
+      parameters: [
+        userName,
+        {
+          name: "setting",
+          in: "path",
+          required: true,
+          schema: { type: "string", example: "GENERAL" },
+        },
+      ],
+      responses: {
+        "200": response("Setting block.", {
+          type: "object",
+          properties: {
+            name: { type: "string", example: "owner/settings/GENERAL" },
+            generalSetting: {
+              type: "object",
+              properties: {
+                memoVisibility: {
+                  type: "string",
+                  enum: ["PRIVATE", "LOCAL", "PUBLIC"],
+                },
+              },
+            },
+          },
+        }),
+        "401": response("Unauthenticated.", error),
+        "403": response("Caller is not the requested user.", error),
+        "404": response("Unsupported setting.", error),
+      },
+    }),
+    patch: secured({
+      operationId: "updateUserSetting",
+      summary: "Update a per-user setting block",
+      tags: ["Users"],
+      parameters: [
+        userName,
+        {
+          name: "setting",
+          in: "path",
+          required: true,
+          schema: { type: "string", example: "GENERAL" },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: json({
+          type: "object",
+          properties: {
+            userSetting: {
+              type: "object",
+              properties: {
+                generalSetting: {
+                  type: "object",
+                  properties: {
+                    memoVisibility: {
+                      type: "string",
+                      enum: ["PRIVATE", "LOCAL", "PUBLIC", "PROTECTED"],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      },
+      responses: {
+        "200": response("Updated setting block.", {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            generalSetting: { type: "object" },
+          },
+        }),
+        "401": response("Unauthenticated.", error),
+        "403": response("Caller is not the requested user.", error),
+        "404": response("Unsupported setting.", error),
+      },
+    }),
+  },
+  "/api/v1/images": {
+    post: secured({
+      operationId: "uploadImageToBed",
+      summary: "Upload an image to the public image bed",
+      tags: ["Attachments"],
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: {
+              type: "object",
+              required: ["file"],
+              properties: { file: { type: "string", format: "binary" } },
+            },
+          },
+        },
+      },
+      responses: {
+        "201": response("Stored image.", {
+          type: "object",
+          properties: {
+            url: { type: "string" },
+            key: { type: "string" },
+            size: { type: "integer" },
+            content_type: { type: "string" },
+          },
+        }),
+        "400": response("file is required.", error),
+        "413": response("Image exceeds the size limit.", error),
+        "415": response("Only images are accepted.", error),
+        "503": response("Image bed is not configured.", error),
+      },
+    }),
+  },
 };
