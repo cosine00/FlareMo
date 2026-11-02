@@ -40,6 +40,7 @@
     "capture:production:check": "node ./scripts/capture-production-check.mjs",
     "capture:production:test": "node --test ./scripts/capture-production-check.test.mjs",
     "deploy:preflight": "node ./scripts/deploy-preflight.mjs",
+    "config:parity:test": "node --test ./scripts/wrangler-config-parity.test.mjs",
     "provision:remote": "node ./scripts/provision-cloudflare.mjs",
     "provision:test": "node --test ./scripts/provision-cloudflare.test.mjs",
     "secrets:sync": "node ./scripts/sync-worker-secrets.mjs",

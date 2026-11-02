@@ -52,6 +52,14 @@
     {
       "binding": "ATTACHMENTS",
       "bucket_name": "flaremo-attachments"
+    },
+    // Optional image bed. `/api/v1/images` stores uploaded pictures here and
+    // returns a URL under vars.FLAREMO_IMAGE_BED_URL (typically a custom
+    // domain or public bucket route). Leave both out if you do not want it:
+    // the endpoint answers 503 instead of failing at deploy time.
+    {
+      "binding": "IMAGES",
+      "bucket_name": "flaremo-images"
     }
   ],
   "queues": {
@@ -110,6 +118,9 @@
     // Canonical origin used by Better Auth for callback and cookie checks.
     // Set this to your public origin; keep secrets out of this file.
     "FLAREMO_PUBLIC_URL": "",
+    // Public base URL of the image bed bucket, e.g. https://img.example.com
+    // (no trailing slash). Must be paired with the IMAGES R2 binding above.
+    "FLAREMO_IMAGE_BED_URL": "",
     // Optional publish-triggered Hugo sync. Keep the PAT in a Worker secret:
     // pnpm exec wrangler secret put FLAREMO_MEMO_SYNC_GITHUB_TOKEN
     "FLAREMO_MEMO_SYNC_GITHUB_REPOSITORY": "cosine00/hug00",
