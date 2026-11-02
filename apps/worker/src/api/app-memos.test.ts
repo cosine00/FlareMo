@@ -165,7 +165,17 @@ describe("FlareMo app memos API", () => {
     // to pass it through to `scopedReadScope`, which widens the corpus to every
     // memo the viewer can read. In a single-owner deployment that is invisible,
     // so this pins the contract rather than a number that happens to match.
-    await createMemo("own note");
+    // Pinned private on purpose: this deployment defaults new memos to public,
+    // which lands in the team space and would leave the personal partition
+    // empty, making the assertion below test the default rather than the
+    // "all" normalization it is about.
+    await json(
+      await fetchApp("http://flaremo.test/api/v1/memos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: "own note", visibility: "private" }),
+      }),
+    );
 
     const withoutSpace = await json<MemoStatsResponse>(
       await fetchApp("http://flaremo.test/api/app/stats?time_zone=UTC"),

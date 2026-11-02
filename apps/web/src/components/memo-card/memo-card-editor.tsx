@@ -194,7 +194,7 @@ export function MemoCardEditor({
 									<XIcon className="size-3.5" />
 								</button>
 								{marked && (
-									<span className="absolute inset-x-0 bottom-0 bg-foreground/70 px-1 py-0.5 text-center text-[10px] leading-tight text-background">
+									<span className="absolute inset-x-0 bottom-0 bg-foreground/70 px-1 py-0.5 text-center text-[12px] leading-tight text-background">
 										{t("editor.imageMarkedForDeletion")}
 									</span>
 								)}
