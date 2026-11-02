@@ -331,6 +331,7 @@ const messages = {
   "composer.removeFile": "Retirer {filename}",
   "composer.imageUploadFailed": "Échec de l'envoi de l'image. Réessayez.",
   "editor.removeImage": "Supprimer cette image",
+  "editor.removeBodyImage": "Retirer cette image du texte",
   "editor.keepImage": "Garder cette image",
   "editor.imageMarkedForDeletion": "Supprimé à l'enregistrement",
   "editor.addImages": "Ajouter des images",

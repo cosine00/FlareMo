@@ -82,6 +82,42 @@ describe("rehypeMergeImageParagraphs", () => {
     expect(imageCount(elements[0])).toBe(1);
   });
 
+  it("splits a run of pictures off the prose it trails", () => {
+    // Note 1249: a sentence, then two pictures, no blank line.
+    const elements = run([
+      paragraph(text("折腾了好久。"), image("a.png"), br(), image("b.png")),
+    ]);
+    expect(elements).toHaveLength(2);
+    expect(elements.map((element) => imageCount(element))).toEqual([0, 2]);
+    expect(elements[0].children?.[0].value).toBe("折腾了好久。");
+  });
+
+  it("splits a run of pictures that leads the prose", () => {
+    const elements = run([
+      paragraph(image("a.png"), br(), image("b.png"), text("说明")),
+    ]);
+    expect(elements).toHaveLength(2);
+    expect(elements.map((element) => imageCount(element))).toEqual([2, 0]);
+  });
+
+  it("leaves one picture hanging off a sentence where it is", () => {
+    const elements = run([paragraph(text("折腾了好久。"), image("a.png"))]);
+    expect(elements).toHaveLength(1);
+    expect(imageCount(elements[0])).toBe(1);
+  });
+
+  it("does not split pictures inside a list item", () => {
+    const item = {
+      type: "element",
+      tagName: "li",
+      properties: {},
+      children: [paragraph(text("说明"), image("a.png"), image("b.png"))],
+    };
+    const root: Node = { type: "root", children: [item] };
+    rehypeMergeImageParagraphs()(root);
+    expect((root.children?.[0].children ?? []).length).toBe(1);
+  });
+
   it("ignores paragraphs that mix pictures with prose", () => {
     const elements = run([
       paragraph(image("a.png"), text(" caption")),

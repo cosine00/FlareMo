@@ -328,6 +328,7 @@ const messages = {
   "composer.imageUploadFailed":
     "Не удалось загрузить изображение. Повторите попытку.",
   "editor.removeImage": "Удалить это изображение",
+  "editor.removeBodyImage": "Убрать это изображение из текста",
   "editor.keepImage": "Оставить это изображение",
   "editor.imageMarkedForDeletion": "Будет удалено при сохранении",
   "editor.addImages": "Добавить изображения",

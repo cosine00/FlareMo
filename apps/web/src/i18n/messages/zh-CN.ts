@@ -295,6 +295,7 @@ const messages = {
   "composer.removeFile": "移除 {filename}",
   "composer.imageUploadFailed": "图片上传失败，请重试",
   "editor.removeImage": "移除这张图片",
+  "editor.removeBodyImage": "从正文中移除这张图片",
   "editor.keepImage": "保留这张图片",
   "editor.imageMarkedForDeletion": "保存时删除",
   "editor.addImages": "添加图片",

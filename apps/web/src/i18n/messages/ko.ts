@@ -323,6 +323,7 @@ const messages = {
   "composer.removeFile": "{filename} 제거",
   "composer.imageUploadFailed": "이미지 업로드 실패. 다시 시도해 주세요",
   "editor.removeImage": "이 이미지 삭제",
+  "editor.removeBodyImage": "본문에서 이 이미지 제거",
   "editor.keepImage": "이 이미지 유지",
   "editor.imageMarkedForDeletion": "저장 시 삭제",
   "editor.addImages": "이미지 추가",

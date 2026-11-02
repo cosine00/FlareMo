@@ -319,6 +319,7 @@ const messages = {
   "composer.removeFile": "إزالة {filename}",
   "composer.imageUploadFailed": "فشل رفع الصورة. أعد المحاولة.",
   "editor.removeImage": "إزالة هذه الصورة",
+  "editor.removeBodyImage": "إزالة هذه الصورة من النص",
   "editor.keepImage": "الاحتفاظ بهذه الصورة",
   "editor.imageMarkedForDeletion": "يُحذف عند الحفظ",
   "editor.addImages": "إضافة صور",

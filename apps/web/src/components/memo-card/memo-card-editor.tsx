@@ -5,6 +5,7 @@ import {
   type Dispatch,
   type RefObject,
   type SetStateAction,
+  useCallback,
   useMemo,
   useState,
 } from "react";
@@ -21,6 +22,7 @@ import { SafeRichComposerEditor } from "@/components/rich-composer-safe";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { filterUnreferencedAttachments } from "@/lib/attachment-refs";
+import { markdownImages, removeMarkdownImage } from "@/lib/memo-media";
 import {
   attachmentImage,
   bedImage,
@@ -48,12 +50,21 @@ type MemoCardEditorProps = {
 };
 
 /**
- * The card's edit face: the composer, the attachment-image strip, save/cancel.
+ * The card's edit face: the composer, the image tray, save/cancel.
  *
- * Pictures that live only as attachments (imports, app clients) are invisible
- * to the markdown editor, so the strip is their only management surface: mark
- * one for deletion (a save deletes it for real, a cancel keeps it) or add new
- * pictures, which ride the same upload pipeline as paste/drop.
+ * The tray is every picture the note holds, as thumbnails in one row under the
+ * toolbar, each with a delete control — a picture written into the body is
+ * otherwise only removable by parking the caret beside it and backspacing,
+ * which is easy to miss and impossible on a touch screen.
+ *
+ * Two kinds of picture share the row:
+ *
+ * - Body pictures (`![alt](src)` in the markdown): deleting one drops the
+ *   reference from the text. If the picture was an attachment it then reappears
+ *   in the row as an unreferenced file, so the bytes can be dropped too.
+ * - Attachment-only pictures (imports, API clients): the markdown never
+ *   mentions them, so the tray is their only surface. Marking one deletes the
+ *   file on save; a cancel keeps it.
  */
 export function MemoCardEditor({
   content,
@@ -113,6 +124,43 @@ export function MemoCardEditor({
         attachment.content_type?.startsWith("image/"),
       ),
     [stripAttachments],
+  );
+
+  // Pictures written into the body, in reading order. The tray shows them so a
+  // body picture is deletable without hunting for the caret position: the
+  // thumbnail is the handle, not the text.
+  const bodyImages = useMemo(() => markdownImages(content), [content]);
+
+  /**
+   * Drops a body picture. With the rich editor live the image node is deleted
+   * in place (which keeps the caret, the undo stack, and the serialization
+   * pipeline intact); without it — the plain-text fallback, or a body whose
+   * markdown the editor could not parse — the markdown token is cut directly.
+   */
+  const removeBodyImage = useCallback(
+    (src: string) => {
+      const editor = editorRef.current;
+      if (editor) {
+        const ranges: Array<{ from: number; to: number }> = [];
+        editor.state.doc.descendants((node, pos) => {
+          if (node.type.name !== "image") return;
+          if (node.attrs?.src !== src) return;
+          ranges.push({ from: pos, to: pos + node.nodeSize });
+        });
+        if (ranges.length > 0) {
+          // Back to front: deleting an earlier range must not shift the
+          // positions computed for the later ones.
+          let transaction = editor.state.tr;
+          for (const range of [...ranges].reverse()) {
+            transaction = transaction.delete(range.from, range.to);
+          }
+          editor.view.dispatch(transaction);
+          return;
+        }
+      }
+      onContentChange(removeMarkdownImage(content, src));
+    },
+    [content, editorRef, onContentChange],
   );
 
   const togglePendingDelete = (name: string) => {
@@ -189,8 +237,35 @@ export function MemoCardEditor({
           insertInlineImages(files, end);
         }}
       />
-      {(stripImages.length > 0 || isUploadingInline) && (
+      {(bodyImages.length > 0 ||
+        stripImages.length > 0 ||
+        isUploadingInline) && (
         <div className="flex flex-wrap items-center gap-2">
+          {bodyImages.map((image, index) => (
+            <div
+              className="group relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted"
+              // The same picture can be referenced twice; position keeps the
+              // keys unique.
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional by construction.
+              key={`body-${index}-${image.src}`}
+            >
+              <img
+                alt={image.alt ?? ""}
+                className="size-full object-cover"
+                loading="lazy"
+                src={image.src}
+              />
+              <button
+                aria-label={t("editor.removeBodyImage")}
+                className="absolute end-1 top-1 grid size-5 cursor-pointer place-items-center rounded-full bg-foreground/70 text-background backdrop-blur transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                title={t("editor.removeBodyImage")}
+                type="button"
+                onClick={() => removeBodyImage(image.src)}
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            </div>
+          ))}
           {stripImages.map((attachment) => {
             const marked = pendingDeletes.has(attachment.name);
             return (

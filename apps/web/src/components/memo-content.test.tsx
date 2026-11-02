@@ -52,4 +52,25 @@ describe("MemoContent image grouping", () => {
     const html = renderToStaticMarkup(<MemoContent content={raw} />);
     expect(html).toContain("memo-image-gallery");
   });
+
+  // Note 1249: prose, then two pictures with no blank line anywhere. The run
+  // lives inside the prose paragraph, so grouping has to split it out rather
+  // than wait for a picture-only paragraph to arrive.
+  it("merges a run of pictures that trails a sentence", () => {
+    const raw = `折腾了好久。![A](${URL_A})\n![B](${URL_B})`;
+    const html = renderToStaticMarkup(<MemoContent content={raw} />);
+    expect(html).toContain("memo-image-gallery");
+    expect(html).toContain(`src="${URL_A}"`);
+    expect(html).toContain(`src="${URL_B}"`);
+    // The sentence survives the split; the gallery does not eat it.
+    expect(html).toContain("折腾了好久。");
+  });
+
+  it("keeps a single picture hanging off a sentence inline", () => {
+    const raw = `折腾了好久。![A](${URL_A})`;
+    const html = renderToStaticMarkup(<MemoContent content={raw} />);
+    expect(html).not.toContain("memo-image-gallery");
+    expect(html).toContain("折腾了好久。");
+    expect(html).toContain(`src="${URL_A}"`);
+  });
 });

@@ -323,6 +323,7 @@ const messages = {
   "composer.removeFile": "Remove {filename}",
   "composer.imageUploadFailed": "Image upload failed. Try again.",
   "editor.removeImage": "Remove this image",
+  "editor.removeBodyImage": "Remove this picture from the note",
   "editor.keepImage": "Keep this image",
   "editor.imageMarkedForDeletion": "Deleted on save",
   "editor.addImages": "Add images",

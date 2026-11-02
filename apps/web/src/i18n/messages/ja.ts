@@ -324,6 +324,7 @@ const messages = {
   "composer.imageUploadFailed":
     "画像のアップロードに失敗しました。再試行してください",
   "editor.removeImage": "この画像を削除",
+  "editor.removeBodyImage": "本文からこの画像を削除",
   "editor.keepImage": "この画像を保持",
   "editor.imageMarkedForDeletion": "保存時に削除",
   "editor.addImages": "画像を追加",

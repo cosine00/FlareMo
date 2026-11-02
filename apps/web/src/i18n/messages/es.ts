@@ -329,6 +329,7 @@ const messages = {
   "composer.removeFile": "Quitar {filename}",
   "composer.imageUploadFailed": "Falló la subida de la imagen. Reintenta.",
   "editor.removeImage": "Eliminar esta imagen",
+  "editor.removeBodyImage": "Quitar esta imagen del texto",
   "editor.keepImage": "Conservar esta imagen",
   "editor.imageMarkedForDeletion": "Se eliminará al guardar",
   "editor.addImages": "Añadir imágenes",
