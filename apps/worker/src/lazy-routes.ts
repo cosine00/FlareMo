@@ -91,18 +91,15 @@ export function mountLazySsrPages(app: Hono<HonoBindings>): void {
     const [
       { registerArticlePage },
       { registerSharePage },
-      { registerMemoFeed },
       { Hono },
     ] = await Promise.all([
       import("./routes/article-page"),
       import("./routes/share-page"),
-      import("./routes/memo-feed"),
       import("hono"),
     ]);
     const inner = new Hono<HonoBindings>();
     registerSharePage(inner);
     registerArticlePage(inner);
-    registerMemoFeed(inner);
     return inner;
   };
   // Loaded on the first page request, not when the app is assembled. Eager
@@ -115,7 +112,6 @@ export function mountLazySsrPages(app: Hono<HonoBindings>): void {
     "/sitemap.xml",
     "/sitemap-articles.xml",
     "/feed.xml",
-    "/memos.xml",
     "/share/:token",
     "/article/:slug",
   ]) {
