@@ -3,6 +3,7 @@
 // internal to ./api/client and is intentionally not re-exported.
 
 export * from "./api/account";
+export * from "./api/ai-insight";
 export * from "./api/articles";
 export * from "./api/attachments";
 export * from "./api/auth";
@@ -13,10 +14,10 @@ export * from "./api/data-tasks";
 export * from "./api/integrations";
 export * from "./api/memories";
 export * from "./api/memos";
-export * from "./api/public-timeline";
 export * from "./api/notifications";
 export * from "./api/plugins";
 export * from "./api/projects";
+export * from "./api/public-timeline";
 export * from "./api/push";
 export * from "./api/releases";
 export * from "./api/shares";

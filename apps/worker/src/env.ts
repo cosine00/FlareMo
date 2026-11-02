@@ -117,6 +117,10 @@ export type FlareMoEnv = Env & {
   FLAREMO_MEMORY_DREAMING?: string;
   FLAREMO_MEMORY_DREAMING_MODEL?: string;
   FLAREMO_MEMORY_PROPOSAL_DAILY_LIMIT?: string;
+  // Optional DeepSeek-compatible insight generation. The key is a Worker
+  // secret; model selection is stored per owner in D1 settings.
+  DEEPSEEK_API_KEY?: string;
+  FLAREMO_AI_BASE_URL?: string;
   // Optional Cloudflare account analytics for the owner usage panel (see
   // src/cf-analytics.ts). Written by `pnpm setup:usage`; token needs only the
   // "Account Analytics: Read" permission. Queries are filtered down to this

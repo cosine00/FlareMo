@@ -230,7 +230,7 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
           </span>
           {dailyReviewCount > 0 && (
             <span
-              className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-5 tabular-nums text-primary-foreground"
+              className="shrink-0 text-xs font-semibold tabular-nums text-primary"
               data-testid="daily-review-count"
             >
               {dailyReviewCount}

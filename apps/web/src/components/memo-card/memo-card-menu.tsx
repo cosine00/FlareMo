@@ -1,5 +1,6 @@
 import {
   ArchiveIcon,
+  BrainCircuitIcon,
   Edit3Icon,
   Globe2Icon,
   ImageIcon,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import type { Memo } from "@/api";
+import { AiInsightDialog } from "@/components/ai-insight-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,6 +84,7 @@ export function MemoCardMenu({
   const { t } = useI18n();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isShareImageOpen, setIsShareImageOpen] = useState(false);
+  const [isInsightOpen, setIsInsightOpen] = useState(false);
   // Latch: mount the lazy dialog on first open, then keep it mounted so the
   // close animation still plays (the chunk stays out of the entry graph).
   const [shareImageMounted, setShareImageMounted] = useState(false);
@@ -159,6 +162,10 @@ export function MemoCardMenu({
                       <ImageIcon />
                       {t("share.imageCard")}
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsInsightOpen(true)}>
+                      <BrainCircuitIcon />
+                      {t("ai.insight.title")}
+                    </DropdownMenuItem>
                   </DropdownMenuGroup>
                 )}
                 {canGovern && (
@@ -220,6 +227,11 @@ export function MemoCardMenu({
           />
         </Suspense>
       )}
+      <AiInsightDialog
+        memo={memo}
+        open={isInsightOpen}
+        onOpenChange={setIsInsightOpen}
+      />
     </>
   );
 }

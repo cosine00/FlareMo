@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   getCaptureStatus,
   getCurrentFlareMoUser,
+  getDailyReview,
   getMemoStats,
   getTagHierarchy,
   getVectorUsage,
@@ -13,6 +14,7 @@ import {
   type Task,
 } from "@/api";
 import type { ExplorerView as ViewMode } from "@/components/flaremo-explorer";
+import { todayKey } from "@/lib/calendar-date";
 import { viewToMemoState } from "@/lib/memo-cache";
 import { queryKeys } from "@/lib/query-keys";
 import { useAllTasks } from "@/lib/task-views";
@@ -46,7 +48,8 @@ type WorkspaceQueryFilters = {
 /**
  * Every server read behind the workspace — memo timeline and stats, tag
  * hierarchy, the signed-in member and their capture seat, semantic/keyword
- * search, plus the derived lists and flags the render tree consumes.
+ * search, and the "on this day" teaser, plus the derived lists and flags the
+ * render tree consumes.
  */
 export function useWorkspaceQueries({
   space,
@@ -183,6 +186,28 @@ export function useWorkspaceQueries({
   const isReader = currentUserQuery.data?.role === "reader";
   const canPublishTeam = Boolean(currentUserQuery.data?.team) && !isReader;
   const teamExpired = Boolean(currentUserQuery.data?.team_expired);
+  // The timeline banner and sidebar badge share this cache entry, so keeping
+  // both affordances does not issue duplicate network requests.
+  const [today, tzOffset] = useMemo(
+    () => [todayKey(), -new Date().getTimezoneOffset()],
+    [],
+  );
+  const onThisDayEnabled =
+    view === "all" &&
+    !dayFilter &&
+    !searchQuery &&
+    !activeTag &&
+    !untagged &&
+    !isSemanticSearch;
+  const onThisDayQuery = useQuery({
+    queryKey: ["daily-review", today, tzOffset],
+    enabled: onThisDayEnabled,
+    queryFn: () => getDailyReview(today, tzOffset),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const showOnThisDayBanner =
+    onThisDayEnabled && (onThisDayQuery.data?.memos.length ?? 0) > 0;
   const memos = useMemo(
     () => memosQuery.data?.pages.flatMap((page) => page.memos) ?? [],
     [memosQuery.data],
@@ -210,9 +235,11 @@ export function useWorkspaceQueries({
     keywordSearch,
     matchingTasks,
     memosQuery,
+    onThisDayQuery,
     semanticEnabled,
     semanticMode,
     semanticResultsQuery,
+    showOnThisDayBanner,
     stats,
     tagHierarchyQuery,
     taskSearchQuery,

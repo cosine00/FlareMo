@@ -11,6 +11,7 @@ import type { TranslationKey, TranslationParams } from "@/i18n";
 import { PluginsCard } from "../admin/plugins-card";
 import { AdminPanel, BrandingCard } from "../admin-page";
 import { AccountPanel, type AccountPanelProps } from "./account-panel";
+import { AiSettingsCard } from "./ai-settings-card";
 import { AppearancePanel } from "./appearance-panel";
 import { EmailSettingsCard, OauthSettingsCard } from "./integrations-card";
 import { PushPanel } from "./push-panel";
@@ -121,6 +122,7 @@ export function SettingsSectionContent({
     case "integrations":
       return isInstanceOwner ? (
         <div className="flex flex-col gap-5">
+          <AiSettingsCard />
           <EmailSettingsCard />
           <OauthSettingsCard />
         </div>

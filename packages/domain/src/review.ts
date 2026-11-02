@@ -21,6 +21,7 @@ import { insertMemoNotification } from "./memos-user";
 import { nextDayKey } from "./tasks";
 
 export type WalkVia =
+  | { type: "semantic"; shared_tags: number; related: boolean }
   | { type: "tag"; tag: string }
   | { type: "relation" }
   | { type: "jump" };
@@ -179,16 +180,18 @@ export async function getRandomMemo(
 }
 
 /**
- * Continue a random walk from `memoId`: prefer a normal memo sharing a tag,
- * then a memo connected through memo_relations (either direction), and
- * finally a completely unrelated random memo ("jump"). Returns null when
- * every normal memo has already been walked through.
+ * Continue a memory walk from `memoId`. Roughly one in five steps is an
+ * intentional random jump; otherwise semantic candidates are ranked with
+ * tag/relation bonuses, then the legacy tag/relation/random fallbacks apply.
+ * `excludeIds` keeps every memo in the current round unique.
  */
 export async function getWalkNextMemo(
   db: FlareMoDb,
   user: UserRow,
   memoId: string,
   excludeIds: string[] = [],
+  semanticIds: string[] = [],
+  randomJumpRate = 0.2,
 ): Promise<{ memo: MemoRow | null; via: WalkVia | null }> {
   const normalizedMemoId = parseResourceName(memoId.trim(), "memos");
   if (!normalizedMemoId || normalizedMemoId === "memos/") {
@@ -197,12 +200,111 @@ export async function getWalkNextMemo(
   await getMemoById(db, user, normalizedMemoId);
   const excluded = new Set([normalizedMemoId, ...excludeIds]);
 
+  // Keep serendipity in the walk: one in five steps deliberately ignores
+  // similarity and jumps elsewhere in the unseen corpus.
+  if (Math.random() < randomJumpRate) {
+    const jumped = await getRandomMemo(db, user, [...excluded]);
+    return jumped
+      ? { memo: jumped, via: { type: "jump" } }
+      : { memo: null, via: null };
+  }
+
   const sourceTags = (
     await db
       .select({ tag: memoTags.tag })
       .from(memoTags)
       .where(and(eq(memoTags.memoId, normalizedMemoId)))
   ).map((row) => row.tag);
+
+  const normalizedSemanticIds = semanticIds
+    .map((id) => parseResourceName(id, "memos"))
+    .filter((id): id is string => Boolean(id) && !excluded.has(id));
+  if (normalizedSemanticIds.length > 0) {
+    const semanticRelations = await db
+      .select({
+        memoId: memoRelations.memoId,
+        relatedMemoId: memoRelations.relatedMemoId,
+      })
+      .from(memoRelations)
+      .where(
+        or(
+          eq(memoRelations.memoId, normalizedMemoId),
+          eq(memoRelations.relatedMemoId, normalizedMemoId),
+        ),
+      );
+    const relatedSet = new Set(
+      semanticRelations.map((relation) =>
+        relation.memoId === normalizedMemoId
+          ? relation.relatedMemoId
+          : relation.memoId,
+      ),
+    );
+    const sharedTagCounts = new Map<string, number>();
+    if (sourceTags.length > 0) {
+      const rows = await db
+        .select({ memoId: memoTags.memoId })
+        .from(memoTags)
+        .where(
+          and(
+            inArray(memoTags.memoId, normalizedSemanticIds),
+            inArray(memoTags.tag, sourceTags),
+          ),
+        );
+      for (const row of rows) {
+        sharedTagCounts.set(
+          row.memoId,
+          (sharedTagCounts.get(row.memoId) ?? 0) + 1,
+        );
+      }
+    }
+    const candidates = await db
+      .select()
+      .from(memos)
+      .where(
+        and(
+          eq(memos.userId, user.id),
+          eq(memos.status, "normal"),
+          inArray(memos.id, normalizedSemanticIds),
+        ),
+      );
+    if (candidates.length > 0) {
+      const byId = new Map(candidates.map((memo) => [memo.id, memo]));
+      const ranked = normalizedSemanticIds.flatMap((id, index) => {
+        const memo = byId.get(id);
+        if (!memo) return [];
+        const sharedTags = sharedTagCounts.get(id) ?? 0;
+        const related = relatedSet.has(id);
+        return [
+          {
+            memo,
+            sharedTags,
+            related,
+            weight:
+              Math.max(1, normalizedSemanticIds.length - index) * 10 +
+              sharedTags * 5 +
+              (related ? 8 : 0),
+          },
+        ];
+      });
+      const total = ranked.reduce((sum, item) => sum + item.weight, 0);
+      let cursor = Math.random() * total;
+      const picked =
+        ranked.find((item) => {
+          cursor -= item.weight;
+          return cursor <= 0;
+        }) ?? ranked[ranked.length - 1];
+      if (picked) {
+        return {
+          memo: picked.memo,
+          via: {
+            type: "semantic",
+            shared_tags: picked.sharedTags,
+            related: picked.related,
+          },
+        };
+      }
+    }
+  }
 
   if (sourceTags.length > 0) {
     const tagCandidates = (

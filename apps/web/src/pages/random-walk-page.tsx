@@ -317,6 +317,9 @@ function viaLabel(
   if (step.via.type === "tag") {
     return t("review.viaTag", { tag: step.via.tag });
   }
+  if (step.via.type === "semantic") {
+    return t("review.viaSemantic");
+  }
   return step.via.type === "relation"
     ? t("review.viaRelation")
     : t("review.viaJump");

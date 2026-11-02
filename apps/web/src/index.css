@@ -17,6 +17,31 @@
   }
 }
 
+/* Related-note thumbnails can reveal the original without turning the whole
+   card into a heavier gallery. Keep this strictly hover-capable: touchscreens
+   retain the existing tap-to-open-detail behaviour without a sticky preview. */
+.related-image-preview {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .related-image-thumbnail:hover > .related-image-preview {
+    display: block;
+    animation: related-image-preview-in 120ms ease-out;
+  }
+}
+
+@keyframes related-image-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 @custom-variant data-closed {
   &:where([data-state="closed"]),
   &:where([data-closed]:not([data-closed="false"])) {
@@ -787,36 +812,19 @@ svg.lucide[stroke-width="2"] {
     @apply brightness-95;
   }
 
-  /* Multi-image notes: a run of pictures becomes one justified band (see
-     MemoImageGallery). Each row carries explicit pixel sizes, so the shared
-     image chrome — margins, the 1px frame — would double up on the gap the
-     row already owns. */
+  /* Multi-image notes use a count-driven collage (see MemoImageGallery).
+     Its fixed outer aspect ratio exists before the image bytes arrive. */
   .memo-markdown .memo-image-gallery {
     @apply relative my-1;
   }
 
-  .memo-markdown .memo-image-gallery-row {
-    @apply flex items-start justify-center gap-2;
-  }
-
-  .memo-markdown
-    .memo-image-gallery-row
-    + .memo-image-gallery-row {
-    @apply mt-2;
-  }
-
-  .memo-markdown .memo-image-gallery-item {
-    @apply m-0 rounded-lg;
-  }
-
-  /* A screenshot or a portrait photo is shown at a portrait card's size and
-     cropped to its middle: one tall capture would otherwise turn a note into a
-     two-metre scroll. The box is square-ish and never wider than 420px, so the
-     picture reads as a picture instead of a full-bleed band. */
+  /* A screenshot or portrait photo becomes a wide, shallow preview instead
+     of a tall strip: enough width to read its subject, with a 4:3 crop keeping
+     one image from dominating the card. */
   .memo-markdown img.memo-image-tall {
     @apply mx-auto block w-full rounded-xl object-cover;
-    max-width: 420px;
-    aspect-ratio: 1 / 1;
+    max-width: 520px;
+    aspect-ratio: 4 / 3;
     object-position: center;
   }
 
@@ -926,15 +934,6 @@ svg.lucide[stroke-width="2"] {
     opacity: 1;
     transform: scale(1.12);
     box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand-500) 14%, transparent);
-  }
-
-  /* Before the natural sizes are known, the pictures stack one per line. */
-  .memo-image-gallery-pending {
-    @apply flex flex-col gap-2;
-  }
-
-  .memo-markdown .memo-image-gallery-pending img {
-    @apply m-0 rounded-lg;
   }
 
   /* Composer rich-text body. Typography mirrors .memo-markdown so editing and

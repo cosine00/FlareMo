@@ -288,7 +288,15 @@ export const MemoContent = memo(function MemoContent({
   );
 
   const openPreview = useCallback(
-    (src: string, alt?: string) => {
+    (src: string, alt?: string, preferredImages?: typeof noteImages) => {
+      if (preferredImages && preferredImages.length > 0) {
+        const index = preferredImages.findIndex((image) => image.src === src);
+        setPreview({
+          images: preferredImages,
+          index: Math.max(0, index),
+        });
+        return;
+      }
       const rendered = containerRef.current
         ? Array.from(
             containerRef.current.querySelectorAll<HTMLImageElement>(
@@ -363,7 +371,10 @@ export const MemoContent = memo(function MemoContent({
             // stays a paragraph so it keeps the reader's full column width.
             if (images.length > 1) {
               return (
-                <MemoImageGallery images={images} onOpenImage={openPreview} />
+                <MemoImageGallery
+                  images={images}
+                  onOpenImage={(src, alt) => openPreview(src, alt, images)}
+                />
               );
             }
             return <p {...props}>{children}</p>;

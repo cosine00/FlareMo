@@ -25,7 +25,7 @@ function note(id: string, overrides: Partial<MemoDto> = {}): MemoDto {
   };
 }
 
-test("moves the on-this-day count into the sidebar navigation", async ({
+test("shows the on-this-day banner and sidebar count together", async ({
   page,
 }) => {
   await page.route("**/api/app/review/daily?*", (route) =>
@@ -35,7 +35,7 @@ test("moves the on-this-day count into the sidebar navigation", async ({
   );
   await page.goto("/");
   await expect(page.getByTestId("daily-review-count").first()).toHaveText("2");
-  await expect(page.getByTestId("on-this-day-banner")).toHaveCount(0);
+  await expect(page.getByTestId("on-this-day-banner")).toContainText("2");
 });
 
 test("hides the on-this-day navigation badge when there are no notes", async ({

@@ -1,3 +1,4 @@
+export * from "./ai-settings";
 export * from "./articles";
 export * from "./attachments";
 export * from "./auth";

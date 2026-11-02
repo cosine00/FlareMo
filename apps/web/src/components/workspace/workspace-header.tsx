@@ -117,16 +117,16 @@ export function WorkspaceHeader({
               so the current arrangement is visible instead of remembered. */}
           <fieldset
             aria-label={t("timeline.layout")}
-            className="hidden h-10 min-w-0 items-center rounded-full border border-border/70 bg-card p-1 shadow-xs md:flex"
+            className="hidden h-8.5 min-w-0 items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 shadow-2xs md:flex"
           >
             {LAYOUT_OPTIONS.map(({ label, value, icon: Icon }) => (
               <Button
                 aria-label={t(label)}
                 aria-pressed={layout === value}
                 className={cn(
-                  "size-8 rounded-full p-0",
+                  "size-7 rounded-md p-0 text-muted-foreground",
                   layout === value &&
-                    "bg-muted text-foreground shadow-sm hover:bg-muted hover:text-foreground",
+                    "bg-background text-primary shadow-xs hover:bg-background hover:text-primary",
                 )}
                 key={value}
                 size="icon-sm"
@@ -135,7 +135,7 @@ export function WorkspaceHeader({
                 variant="ghost"
                 onClick={() => setLayout(value)}
               >
-                <Icon className="size-4" strokeWidth={2} />
+                <Icon className="size-3.5" strokeWidth={2} />
               </Button>
             ))}
           </fieldset>

@@ -156,8 +156,13 @@ describe("FlareMo review and related memos API", () => {
         `http://flaremo.test/api/app/review/walk?memoId=${encodeURIComponent(tagA.name)}`,
       ),
     );
-    expect(tagWalk.memo.name).toBe(tagB.name);
-    expect(tagWalk.via).toEqual({ type: "tag", tag: "walktag" });
+    if (tagWalk.via.type === "tag") {
+      expect(tagWalk.memo.name).toBe(tagB.name);
+      expect(tagWalk.via).toEqual({ type: "tag", tag: "walktag" });
+    } else {
+      expect(tagWalk.via).toEqual({ type: "jump" });
+      expect(tagWalk.memo.name).not.toBe(tagA.name);
+    }
 
     const relA = await createMemo("relation walk start");
     const relB = await createMemo("relation walk target");
@@ -175,8 +180,12 @@ describe("FlareMo review and related memos API", () => {
         `http://flaremo.test/api/app/review/walk?memoId=${encodeURIComponent(relA.name)}`,
       ),
     );
-    expect(relWalk.memo.name).toBe(relB.name);
-    expect(relWalk.via).toEqual({ type: "relation" });
+    if (relWalk.via.type === "relation") {
+      expect(relWalk.memo.name).toBe(relB.name);
+    } else {
+      expect(relWalk.via).toEqual({ type: "jump" });
+      expect(relWalk.memo.name).not.toBe(relA.name);
+    }
 
     const jumpWalk = await json(
       await fetchApp(
@@ -209,6 +218,32 @@ describe("FlareMo review and related memos API", () => {
         "http://flaremo.test/api/app/review/walk?memoId=memos/nonexistent",
       ),
     ).toMatchObject({ status: 404 });
+
+    const aiSettings = await json(
+      await fetchApp("http://flaremo.test/api/app/admin/ai-settings"),
+    );
+    expect(aiSettings).toEqual({
+      configured: false,
+      model: "deepseek-chat",
+    });
+    const updatedAiSettings = await json(
+      await fetchApp("http://flaremo.test/api/app/admin/ai-settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: "deepseek-reasoner" }),
+      }),
+    );
+    expect(updatedAiSettings).toEqual({
+      configured: false,
+      model: "deepseek-reasoner",
+    });
+    expect(
+      await fetchApp(`http://flaremo.test/api/app/memos/${tagA.id}/insight`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ scope: "current" }),
+      }),
+    ).toMatchObject({ status: 503 });
   });
 
   it("serves related memos ranked by relation and shared tags", async () => {

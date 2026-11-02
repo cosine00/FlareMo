@@ -330,7 +330,11 @@ export function MemoComposer({
           onScheduleChange={(schedule) => commitDraft({ schedule })}
           onStartVoice={() => void captureController.start()}
           onExpand={
-            onSubmitArticle ? () => setIsFullscreenOpen(true) : undefined
+            onSubmitArticle
+              ? () => {
+                  setIsFullscreenOpen(true);
+                }
+              : undefined
           }
         />
         <ComposerVisibilityMenu

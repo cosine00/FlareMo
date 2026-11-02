@@ -22,9 +22,9 @@ import {
 } from "./context";
 import { createEmbeddingProvider, createVectorIndex } from "./embedding";
 import type { FlareMoEnv } from "./env";
-import { dispatchMemoBlogSync } from "./memo-blog-sync";
 import { jsonError } from "./http";
 import { resolveOauthIntegration } from "./integrations/config";
+import { dispatchMemoBlogSync } from "./memo-blog-sync";
 import { betterAuthRateLimitBucket, rateLimitGuard } from "./rate-limit";
 
 // Cron/queue maintenance surface moved to its own module; re-exported so the
@@ -34,6 +34,7 @@ export { runQueuedJobs, runScheduledMaintenance } from "./scheduled-tasks";
 import { mountLazyRoute, mountLazySsrPages } from "./lazy-routes";
 import { accountApi } from "./routes/account-api";
 import { adminApi } from "./routes/admin-api";
+import { aiSettingsApi } from "./routes/ai-settings-api";
 import { appApi } from "./routes/app-api";
 import { authApi } from "./routes/auth-api";
 import { brandingApi } from "./routes/branding-api";
@@ -252,6 +253,7 @@ export function createFlareMoApp(
   // Registered before adminApi so these owner settings routes win; paths
   // adminApi owns (/plugins GET/PUT) still fall through to it.
   app.route("/api/app/admin/plugins", pluginsStoreApi);
+  app.route("/api/app/admin/ai-settings", aiSettingsApi);
   app.route("/api/app/admin/email-settings", emailSettingsApi);
   app.route("/api/app/admin/oauth-settings", oauthSettingsApi);
   app.route("/api/app/admin", adminApi);

@@ -20,6 +20,7 @@ import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { type TranslationKey, type TranslationParams, useI18n } from "@/i18n";
 import { isoDay, todayKey } from "@/lib/calendar-date";
+import { calendarYearsBetween } from "@/lib/calendar-years";
 
 export function DailyReviewPage() {
   const { locale, t } = useI18n();
@@ -185,9 +186,10 @@ function buildReviewGroups(
     if (memoDay >= todayStr) continue;
 
     const diffDays = daysBetween(memoDay, todayStr);
-    // A year counts once the anniversary has passed: a December note is
-    // not "a year ago" in January.
-    const yearsAgo = Math.floor(diffDays / 365.25);
+    // Count completed calendar anniversaries. Dividing elapsed days by 365.25
+    // made an exact non-leap anniversary (365 days) zero years old, and made a
+    // two-year span containing one leap day only one year old.
+    const yearsAgo = calendarYearsBetween(memoDay, todayStr);
 
     let key: string;
     let title: string;

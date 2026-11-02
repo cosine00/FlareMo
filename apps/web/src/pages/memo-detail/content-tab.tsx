@@ -138,13 +138,29 @@ export function ContentTab({
                   {images.length > 0 && (
                     <div className="flex shrink-0 items-start gap-1">
                       {images.slice(0, 3).map((image) => (
-                        <img
-                          alt={image.alt ?? ""}
-                          className="h-14 w-14 rounded-md border border-border/60 object-cover"
+                        <span
+                          className="related-image-thumbnail relative block"
                           key={image.src}
-                          loading="lazy"
-                          src={image.src}
-                        />
+                        >
+                          <img
+                            alt={image.alt ?? ""}
+                            className="block h-14 w-14 rounded-md border border-border/60 object-cover"
+                            loading="lazy"
+                            src={image.src}
+                          />
+                          <span
+                            aria-hidden="true"
+                            className="related-image-preview pointer-events-none absolute right-[calc(100%+0.625rem)] top-1/2 z-50 -translate-y-1/2 rounded-xl border border-border/70 bg-popover p-1.5 shadow-xl"
+                          >
+                            <img
+                              alt=""
+                              className="m-0 block max-h-80 w-auto max-w-80 rounded-lg object-contain"
+                              decoding="async"
+                              loading="lazy"
+                              src={image.src}
+                            />
+                          </span>
+                        </span>
                       ))}
                       {images.length > 3 && (
                         <span className="flex h-14 min-w-6 items-center justify-center rounded-md border border-border/60 text-xs text-muted-foreground">

@@ -158,6 +158,11 @@ export const relatedMemosQuerySchema = z.object({
 });
 
 export const reviewWalkViaSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("semantic"),
+    shared_tags: z.number().int().nonnegative(),
+    related: z.boolean(),
+  }),
   z.object({ type: z.literal("tag"), tag: z.string() }),
   z.object({ type: z.literal("relation") }),
   z.object({ type: z.literal("jump") }),
