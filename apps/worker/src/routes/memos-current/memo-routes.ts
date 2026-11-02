@@ -151,10 +151,31 @@ export function registerMemoRoutes(app: Hono<HonoBindings>) {
       );
       const input = currentUpdateInput(body, updateMask);
       const context = await getRequestContext(c);
+      const memoName = normalizeMemoName(c.req.param("memo"));
+      if (updateMask.includes("attachments")) {
+        if (!Array.isArray(body.attachments)) {
+          throw new CompatValidationError(
+            "attachments is required by updateMask",
+          );
+        }
+        const names = body.attachments.flatMap((attachment) =>
+          typeof attachment.name === "string" ? [attachment.name] : [],
+        );
+        await bindMemoAttachments(context.db, context.user, memoName, names);
+      }
+      if (Object.keys(input).length === 0) {
+        // Mask covered only server-owned fields; the rebound attachments
+        // above are the whole update, so answer with the current memo.
+        return c.json(await getMemoByIdForViewer(
+          context.db,
+          context.user,
+          memoName,
+        ));
+      }
       const memo = await updateMemo(
         context.db,
         context.user,
-        normalizeMemoName(c.req.param("memo")),
+        memoName,
         input,
       );
       return c.json(await currentMemoWithDetails(context, memo));

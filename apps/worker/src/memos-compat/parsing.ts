@@ -116,7 +116,11 @@ export function parseMemosState(
 export function compatMemoVisibility(
   value: unknown,
 ): "private" | "protected" | "public" {
-  const normalized = parseMemosVisibility(value);
+  // Some Memos clients (MoeMemos) send the LOCAL enum for "workspace
+  // visible"; it maps onto FlareMo's protected tier.
+  const normalized = parseMemosVisibility(
+    String(value ?? "").toUpperCase() === "LOCAL" ? "PROTECTED" : value,
+  );
   if (!normalized) {
     throw new CompatValidationError(`Unsupported memo visibility: ${value}`);
   }

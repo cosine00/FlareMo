@@ -6,10 +6,12 @@ export { isLegacyWireRequest } from "./helpers";
 
 import { registerAttachmentRoutes } from "./attachment-routes";
 import { registerAuthRoutes } from "./auth-routes";
+import { registerClientCompatRoutes } from "./client-compat-routes";
 import { registerMemoRoutes } from "./memo-routes";
 import { registerUserRoutes } from "./user-routes";
 
 registerAuthRoutes(memosCurrentApi);
 registerMemoRoutes(memosCurrentApi);
 registerAttachmentRoutes(memosCurrentApi);
+registerClientCompatRoutes(memosCurrentApi);
 registerUserRoutes(memosCurrentApi);

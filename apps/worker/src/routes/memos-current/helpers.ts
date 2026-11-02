@@ -247,7 +247,12 @@ export function currentUpdateInput(
     : updateMask;
   const input: Record<string, unknown> = {};
   for (const field of fields) {
-    if (field === "content") {
+    // Memos clients put server-owned fields in the mask; updateTime is
+    // assigned by the server and attachments are bound separately by the
+    // route handler, so both are accepted and skipped here.
+    if (field === "update_time" || field === "attachments") {
+      continue;
+    } else if (field === "content") {
       if (body.content === undefined)
         throw new CompatValidationError("content is required by updateMask");
       input.content = body.content;
@@ -280,8 +285,8 @@ export function currentUpdateInput(
       throw new CompatValidationError(`Unsupported updateMask field: ${field}`);
     }
   }
-  if (Object.keys(input).length === 0)
-    throw new CompatValidationError("updateMask is required");
+  // A mask of only server-owned fields (update_time, attachments) is valid:
+  // the route handler binds attachments itself and skips updateMemo.
   return input as Parameters<typeof updateMemo>[3];
 }
 

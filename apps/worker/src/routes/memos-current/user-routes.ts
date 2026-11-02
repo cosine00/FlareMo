@@ -14,6 +14,7 @@ import {
   type HonoBindings,
   loadAuthFactory,
 } from "../../context";
+import { currentUserStatsResponse } from "./client-compat-routes";
 import { getFlaremoUserCached } from "../../identity-cache";
 import { currentJsonError } from "../../memos-compat/current-errors";
 import { registerCompatMember } from "../../memos-compat/member-service";
@@ -164,6 +165,16 @@ export function registerUserRoutes(app: Hono<HonoBindings>) {
   app.get("/users/:user", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
+      const rawUserParam = c.req.param("user");
+      // MoeMemos appends the RPC verb to the resource path
+      // (GET /api/v1/users/{id}:getStats); Hono cannot register the suffix
+      // as a route, so the shared handler forwards on the trailing marker.
+      if (rawUserParam.endsWith(":getStats")) {
+        return await currentUserStatsResponse(
+          c,
+          rawUserParam.slice(0, -":getStats".length),
+        );
+      }
       const context = await getRequestContext(c);
       const userId = normalizeUserName(c.req.param("user"));
       const user = await getFlaremoUserCached(context.db, userId);
