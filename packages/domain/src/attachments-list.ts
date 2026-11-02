@@ -369,8 +369,14 @@ export async function listAttachmentsForMemosForViewer(
   // scalar subquery binds one parameter per memo id, so an unbounded page blew
   // the 100-parameter cap; chunking keeps every statement legal and the merge
   // preserves the single-query ordering.
+  //
+  // The reserve must cover `memoReadScope(user)` as well as the two attachment
+  // predicates below, not just those two: at reserve 2 a 98-id page bound 98
+  // ids plus scope and made `GET /api/v1/memos?pageSize=98` answer 500 while
+  // 97 still worked. Keep the default reserve so a scope change cannot push the
+  // statement over the cap again.
   const rows: Array<typeof attachments.$inferSelect> = [];
-  for (const idChunk of chunkForD1(memoIds, d1IdsPerStatement(2))) {
+  for (const idChunk of chunkForD1(memoIds, d1IdsPerStatement())) {
     const allowedMemoIds = db
       .select({ id: memos.id })
       .from(memos)
