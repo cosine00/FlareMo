@@ -11,9 +11,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compareConfigs, parseJsonc } from "./wrangler-config-parity.mjs";
+import {
+  checkOperatorValues,
+  compareConfigs,
+  parseJsonc,
+} from "./wrangler-config-parity.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const isCi = process.env.CI === "true" || process.env.CI === "1";
 
 function checkConfigParity() {
   // Overridable so the drift path can be exercised without touching the real
@@ -32,30 +37,54 @@ function checkConfigParity() {
     return;
   }
 
+  const local = parseJsonc(readFileSync(localPath, "utf8"));
   const { errors, warnings } = compareConfigs(
-    parseJsonc(readFileSync(localPath, "utf8")),
+    local,
     parseJsonc(readFileSync(examplePath, "utf8")),
   );
   for (const warning of warnings) console.warn(`Config note: ${warning}`);
-  if (errors.length === 0) {
-    console.log(
-      `Config parity passed: wrangler.jsonc matches the example${warnings.length > 0 ? ` (${warnings.length} note(s))` : ""}.`,
+  if (errors.length > 0) {
+    console.error(
+      "wrangler.jsonc drifted from wrangler.jsonc.example. `git merge` never updates the local file, so upstream changes silently stop applying:",
     );
-    return;
+    for (const error of errors) console.error(`  - ${error}`);
+    console.error(
+      "Review the example and port the missing entries into wrangler.jsonc (keep your own ids/domains).",
+    );
+    process.exit(1);
   }
-  console.error(
-    "wrangler.jsonc drifted from wrangler.jsonc.example. `git merge` never updates the local file, so upstream changes silently stop applying:",
+
+  // Structure can match the example while the operator-supplied values are
+  // still blank — that is the state of a fresh clone on a second machine.
+  const operator = checkOperatorValues(local);
+  for (const warning of operator.warnings) {
+    console.warn(`Config note: ${warning}`);
+  }
+  if (operator.errors.length > 0) {
+    const detail = operator.errors.map((error) => `  - ${error}`).join("\n");
+    if (isCi) {
+      console.warn(
+        `Config warning (CI): wrangler.jsonc is missing these values:\n${detail}`,
+      );
+    } else {
+      console.error(
+        "wrangler.jsonc is missing values only the operator can supply. Copying wrangler.jsonc.example leaves these blank, so deploying now would either fail or produce a half-working site:",
+      );
+      console.error(detail);
+      console.error(
+        "Fill them in wrangler.jsonc (see docs/deploy.md). `pnpm provision:remote` can create the resources and write the D1 id back.",
+      );
+      process.exit(1);
+    }
+  }
+
+  console.log(
+    `Config parity passed: wrangler.jsonc matches the example${warnings.length + operator.warnings.length > 0 ? ` (${warnings.length + operator.warnings.length} note(s))` : ""}.`,
   );
-  for (const error of errors) console.error(`  - ${error}`);
-  console.error(
-    "Review the example and port the missing entries into wrangler.jsonc (keep your own ids/domains).",
-  );
-  process.exit(1);
 }
 
 checkConfigParity();
 
-const isCi = process.env.CI === "true" || process.env.CI === "1";
 const secret = process.env.BETTER_AUTH_SECRET?.trim();
 
 let problem;

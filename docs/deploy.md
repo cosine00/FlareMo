@@ -73,6 +73,36 @@ store，首次部署后由部署者用 `wrangler secret put` 配置。本地手�
 `flaremo-member-removal` Queue 已在目标 Cloudflare 账户创建；`pnpm deploy:dry-run`
 会显示该 Queue、D1、R2、Vectorize、AI 和 Assets binding，但不会创建远程资源。
 
+### 在另一台机器上部署
+
+代码全部走 Git，但有三类东西不随仓库走，换机器时必须在本地重建：
+
+| 项目 | 是否入库 | 换机器要做什么 |
+| --- | --- | --- |
+| 源码、migrations、示例配置 | 是 | `git clone` + `pnpm install` 即可 |
+| `wrangler.jsonc` | 否（`.gitignore`） | `cp wrangler.jsonc.example wrangler.jsonc`，再填下表的四项 |
+| `.dev.vars` | 否 | 只在需要跑 `pnpm dev` 时从 `.dev.vars.example` 复制 |
+| Worker secrets | 否（存在 Cloudflare 侧） | 不用重传；换 Cloudflare 账号才需要 `wrangler secret put` |
+
+`wrangler.jsonc` 里必须手填、且填错就会让站点半残的值：
+
+- `d1_databases[].database_id`：填**现有**数据库的 id（`pnpm exec wrangler d1 list`）。填成占位符或新建库会导致线上数据全空。
+- `vars.FLAREMO_PUBLIC_URL`：必须是 HTTPS origin，指向正式域名；为空时认证 fail closed，无法登录。
+- `vars.FLAREMO_IMAGE_BED_URL`：要与 `r2_buckets` 里 `IMAGES` 绑定的真实桶一致，否则图片地址不可访问。
+- `routes`：示例文件里没有，缺了 Worker 只会挂在 `workers.dev` 域名，自定义域名不再绑定。
+
+R2 的 `bucket_name` 还必须是账户里已存在的桶。名字写错时 `wrangler deploy` 会直接报 bucket 不存在——preflight 无法在本地查询远程资源，看到这个报错优先核对桶名。
+
+部署前还要有 Cloudflare 凭据和本地闸门变量：
+
+```bash
+pnpm exec wrangler login      # 或导出 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
+export BETTER_AUTH_SECRET=<32 位以上随机串>
+pnpm deploy:preflight
+```
+
+`BETTER_AUTH_SECRET` 在这里只用于通过本地 preflight 校验，`wrangler deploy` 不会用它覆盖 Worker 上已有的同名 secret；真正参与签名的值保存在 Cloudflare secret store。`pnpm deploy:preflight` 会比对 `wrangler.jsonc` 与示例的结构，并拦下仍然为空或占位的上述四项值。
+
 ## Better Auth 原生认证
 
 FlareMo 的应用层认证由 Better Auth 提供。当前是“单用户完整能力、多用户数据地基”模型：首次部署通过一次性 bootstrap 创建用户名、显示名、邮箱和密码，之后关闭公共 signup。浏览器使用 `HttpOnly`、`SameSite=Lax` cookie session；脚本、MCP 和 Memos-compatible 客户端使用由已登录账户创建的可撤销 `memos_pat_` PAT。

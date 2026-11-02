@@ -91,6 +91,124 @@ function diffSets(localNames, exampleNames) {
   };
 }
 
+const TEMPLATE_PLACEHOLDER = /^(?:replace|your[-_]|change[-_]?me|<)/i;
+
+function text(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isLoopbackHost(hostname) {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname.endsWith(".localhost")
+  );
+}
+
+/**
+ * Checks the values only the operator can supply.
+ *
+ * A fresh `cp wrangler.jsonc.example wrangler.jsonc` passes structural parity
+ * while carrying an empty `FLAREMO_PUBLIC_URL` and a placeholder D1 id. Deploy
+ * either rejects that outright or, worse, accepts it into a half-working site:
+ * sign-in fails and the image bed hands out dead URLs. Anyone cloning this repo
+ * on a second machine starts from exactly that state.
+ *
+ * Errors block a local deploy; warnings do not.
+ */
+export function checkOperatorValues(config) {
+  const errors = [];
+  const warnings = [];
+  const vars = config.vars ?? {};
+
+  const databases = Array.isArray(config.d1_databases)
+    ? config.d1_databases
+    : [];
+  if (databases.length === 0) {
+    errors.push(
+      "d1_databases: no database configured — `pnpm migrate:remote` has nothing to target",
+    );
+  }
+  for (const database of databases) {
+    const binding = text(database.binding) || "DB";
+    const id = text(database.database_id);
+    if (!id) {
+      errors.push(
+        `d1_databases[${binding}].database_id is empty — run \`pnpm provision:remote\` (or \`wrangler d1 create\`) and paste the id`,
+      );
+    } else if (TEMPLATE_PLACEHOLDER.test(id)) {
+      errors.push(
+        `d1_databases[${binding}].database_id is still the template placeholder "${id}" — paste the id from \`wrangler d1 list\``,
+      );
+    }
+  }
+
+  const publicUrl = text(vars.FLAREMO_PUBLIC_URL);
+  if (!publicUrl) {
+    errors.push(
+      "vars.FLAREMO_PUBLIC_URL is empty — Better Auth signs callbacks and cookies against it, so sign-in fails",
+    );
+  } else {
+    let parsed;
+    try {
+      parsed = new URL(publicUrl);
+    } catch {
+      errors.push(`vars.FLAREMO_PUBLIC_URL is not a URL: "${publicUrl}"`);
+    }
+    if (parsed) {
+      if (parsed.protocol !== "https:" && !isLoopbackHost(parsed.hostname)) {
+        errors.push(
+          `vars.FLAREMO_PUBLIC_URL must use https outside localhost: "${publicUrl}"`,
+        );
+      }
+      if (parsed.pathname !== "/" || parsed.search || parsed.hash) {
+        errors.push(
+          `vars.FLAREMO_PUBLIC_URL must be an origin only (no path, query or hash): "${publicUrl}"`,
+        );
+      }
+    }
+  }
+
+  const buckets = Array.isArray(config.r2_buckets) ? config.r2_buckets : [];
+  for (const bucket of buckets) {
+    if (!text(bucket.bucket_name)) {
+      errors.push(
+        `r2_buckets[${text(bucket.binding) || "?"}].bucket_name is empty`,
+      );
+    }
+  }
+  const hasImageBed = buckets.some(
+    (bucket) => text(bucket.binding) === "IMAGES",
+  );
+  const imageBedUrl = text(vars.FLAREMO_IMAGE_BED_URL);
+  if (hasImageBed && !imageBedUrl) {
+    errors.push(
+      "r2_buckets binds IMAGES but vars.FLAREMO_IMAGE_BED_URL is empty — uploaded pictures would get URLs nobody can load",
+    );
+  }
+  if (!hasImageBed && imageBedUrl) {
+    errors.push(
+      "vars.FLAREMO_IMAGE_BED_URL is set but no R2 binding named IMAGES — image uploads answer 503",
+    );
+  }
+
+  const crons = config.triggers?.crons;
+  if (!Array.isArray(crons) || crons.length === 0) {
+    errors.push(
+      "triggers.crons is empty — scheduled work (memory digest, the blog-sync fallback) never runs",
+    );
+  }
+
+  if (!Array.isArray(config.routes) || config.routes.length === 0) {
+    warnings.push(
+      "routes is empty: the Worker stays on its workers.dev hostname and no custom domain is bound",
+    );
+  }
+
+  return { errors, warnings };
+}
+
 /**
  * Compares the local deployment config against the tracked example.
  * Returns `{ errors, warnings }`; errors block a deploy, warnings do not.
