@@ -22,6 +22,7 @@ import {
 } from "./context";
 import { createEmbeddingProvider, createVectorIndex } from "./embedding";
 import type { FlareMoEnv } from "./env";
+import { dispatchMemoBlogSync } from "./memo-blog-sync";
 import { jsonError } from "./http";
 import { resolveOauthIntegration } from "./integrations/config";
 import { betterAuthRateLimitBucket, rateLimitGuard } from "./rate-limit";
@@ -268,8 +269,8 @@ export function createFlareMoApp(
   app.route("/api/app/tasks", tasksApi);
   app.route("/api/app", appApi);
   app.route("/api/public", publicApi);
-  // SSR public pages (share/article + sitemap/feed): the largest lazy win —
-  // marked/shiki-core/sitemap/feed only parse when one of the five public page
+  // SSR public pages (share/article + sitemap/feeds): the largest lazy win —
+  // marked/shiki-core/sitemap/feed only parse when one of the six public page
   // paths is actually requested.
   //
   // Route lazy-mounting cannot reach everything, though, and it is worth being
@@ -494,6 +495,13 @@ export function createFlareMoWorker(
             hasCustomUserPlanLimits,
           ).catch((error) =>
             logBackgroundTaskFailure("embedding_outbox", error),
+          ),
+        );
+        // The blog re-reads the complete public feed; no Memo content or
+        // attachment URL is sent to GitHub.
+        ctx?.waitUntil(
+          dispatchMemoBlogSync(env, request, response).catch((error) =>
+            logBackgroundTaskFailure("memo_blog_sync", error),
           ),
         );
       }
