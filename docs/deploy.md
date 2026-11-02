@@ -93,6 +93,24 @@ store，首次部署后由部署者用 `wrangler secret put` 配置。本地手�
 
 R2 的 `bucket_name` 还必须是账户里已存在的桶。名字写错时 `wrangler deploy` 会直接报 bucket 不存在——preflight 无法在本地查询远程资源，看到这个报错优先核对桶名。
 
+用值快照代替手抄，避免 36 位 D1 id 抄错：
+
+```bash
+# 已配置好的机器
+pnpm config:snapshot   # 写出 wrangler-values.json：只含账号标识和公开变量，不含任何 secret
+
+# 新机器
+git clone https://github.com/cosine00/FlareMo.git && cd FlareMo
+pnpm install
+cp wrangler.jsonc.example wrangler.jsonc
+# 把 wrangler-values.json 放到仓库根目录
+pnpm config:check      # 逐项列出仍缺失或不同的值，全部一致才返回 0
+```
+
+`pnpm config:diff` 不需要快照也能用：它列出本机相对示例必须覆盖的所有行，换机器时照着改的就是这几行。`wrangler-values.json` 已被 `.gitignore` 排除，放在仓库根不会误提交；它记录的密钥类变量只有名字，没有值——那些值在 Cloudflare 的 secret store 里，换机器不需要重新上传。
+
+改完后 `pnpm config:check` 与 `pnpm deploy:preflight` 都通过，再执行 `pnpm deploy`。
+
 部署前还要有 Cloudflare 凭据和本地闸门变量：
 
 ```bash
