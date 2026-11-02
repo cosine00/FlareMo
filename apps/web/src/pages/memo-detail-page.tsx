@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { useI18n } from "@/i18n";
-import { formatMemoRelativeTime, formatMemoTime, memoTitle } from "@/lib/memo";
+import { formatMemoTime } from "@/lib/memo";
 import type { MemoDetailTaskInteraction } from "./memo-detail/content-tab";
 import { ContentTab } from "./memo-detail/content-tab";
 import { HistoryTab } from "./memo-detail/history-tab";
@@ -77,26 +77,9 @@ export function MemoDetailPage({ memoId }: { memoId: string }) {
           setMobileSheetOpen={setMobileSheetOpen}
           sidebarCollapsed={sidebarCollapsed}
           title={
-            // The note's own opening line, not its resource name: a header
-            // reading `memos/a60cdd29-…` identifies the row to the database
-            // and to nobody else. Falls back to the timestamp for a memo whose
-            // body is only tags or media.
-            contextQuery.data ? (
-              <span className="truncate" title={contextQuery.data.memo.name}>
-                {memoTitle(contextQuery.data.memo.content) ||
-                  formatMemoRelativeTime(
-                    contextQuery.data.memo.create_time,
-                    locale,
-                  )}
-              </span>
-            ) : contextQuery.isError ? (
-              t("detail.unavailable")
-            ) : (
-              <>
-                <Skeleton aria-hidden className="h-4 w-40" />
-                <span className="sr-only">{t("common.loading")}</span>
-              </>
-            )
+            <span className="truncate" title={`ID.${memoId}`}>
+              {`ID.${memoId}`}
+            </span>
           }
           toggleSidebarCollapsed={toggleSidebarCollapsed}
         />
