@@ -1,4 +1,4 @@
-import { LayoutListIcon, PanelLeftOpenIcon, Rows3Icon } from "lucide-react";
+import { LayoutGridIcon, ListIcon, PanelLeftOpenIcon } from "lucide-react";
 import type { MemoSpace } from "@/api";
 import type { ExplorerView } from "@/components/flaremo-explorer";
 import { ScopeSwitcher } from "@/components/scope-switcher";
@@ -17,10 +17,10 @@ import { cn } from "@/lib/utils";
 const LAYOUT_OPTIONS: {
   label: TranslationKey;
   value: TimelineLayout;
-  icon: typeof Rows3Icon;
+  icon: typeof LayoutGridIcon;
 }[] = [
-  { value: "cards", icon: Rows3Icon, label: "timeline.layoutCards" },
-  { value: "timeline", icon: LayoutListIcon, label: "timeline.layoutTimeline" },
+  { value: "cards", icon: LayoutGridIcon, label: "timeline.layoutCards" },
+  { value: "timeline", icon: ListIcon, label: "timeline.layoutTimeline" },
 ];
 
 /**
@@ -115,19 +115,18 @@ export function WorkspaceHeader({
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Layout picker: a segmented control rather than a cycling button,
               so the current arrangement is visible instead of remembered. */}
-          <div
+          <fieldset
             aria-label={t("timeline.layout")}
-            className="hidden items-center gap-0.5 rounded-lg border border-border/60 p-0.5 md:flex"
-            role="group"
+            className="hidden h-10 min-w-0 items-center rounded-full border border-border/70 bg-card p-1 shadow-xs md:flex"
           >
             {LAYOUT_OPTIONS.map(({ label, value, icon: Icon }) => (
               <Button
                 aria-label={t(label)}
                 aria-pressed={layout === value}
                 className={cn(
-                  "size-6 rounded-md p-0",
+                  "size-8 rounded-full p-0",
                   layout === value &&
-                    "bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground",
+                    "bg-muted text-foreground shadow-sm hover:bg-muted hover:text-foreground",
                 )}
                 key={value}
                 size="icon-sm"
@@ -136,10 +135,10 @@ export function WorkspaceHeader({
                 variant="ghost"
                 onClick={() => setLayout(value)}
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-4" strokeWidth={2} />
               </Button>
             ))}
-          </div>
+          </fieldset>
           <SpotlightSearchTrigger
             className="hidden md:flex"
             onClick={() => setSpotlightOpen(true)}

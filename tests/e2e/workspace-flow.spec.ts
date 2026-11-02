@@ -25,6 +25,29 @@ function note(id: string, overrides: Partial<MemoDto> = {}): MemoDto {
   };
 }
 
+test("moves the on-this-day count into the sidebar navigation", async ({
+  page,
+}) => {
+  await page.route("**/api/app/review/daily?*", (route) =>
+    route.fulfill({
+      json: { memos: [note("review-1"), note("review-2")] },
+    }),
+  );
+  await page.goto("/");
+  await expect(page.getByTestId("daily-review-count").first()).toHaveText("2");
+  await expect(page.getByTestId("on-this-day-banner")).toHaveCount(0);
+});
+
+test("hides the on-this-day navigation badge when there are no notes", async ({
+  page,
+}) => {
+  await page.route("**/api/app/review/daily?*", (route) =>
+    route.fulfill({ json: { memos: [] } }),
+  );
+  await page.goto("/");
+  await expect(page.getByTestId("daily-review-count")).toHaveCount(0);
+});
+
 test("keeps loaded cards mounted when pagination fails and retries the missing page", async ({
   page,
 }) => {

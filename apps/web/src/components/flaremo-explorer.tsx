@@ -24,6 +24,7 @@ import {
 } from "react";
 import {
   getCaptureStatus,
+  getDailyReview,
   type MemoSpace,
   type MemoStatsResponse,
   type TagHierarchyNode,
@@ -46,6 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n";
 import { currentStreak } from "@/lib/activity";
+import { todayKey } from "@/lib/calendar-date";
 import { queryKeys } from "@/lib/query-keys";
 import {
   readTagEmojiMap,
@@ -136,6 +138,17 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
     staleTime: 30_000,
     retry: false,
   });
+  const [today, tzOffset] = useMemo(
+    () => [todayKey(), -new Date().getTimezoneOffset()],
+    [],
+  );
+  const dailyReview = useQuery({
+    queryKey: ["daily-review", today, tzOffset],
+    queryFn: () => getDailyReview(today, tzOffset),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const dailyReviewCount = dailyReview.data?.memos.length ?? 0;
   const streak = useMemo(() => currentStreak(stats.activity), [stats.activity]);
 
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
@@ -215,6 +228,14 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
           <span className="min-w-0 flex-1 truncate">
             {t("nav.dailyReview")}
           </span>
+          {dailyReviewCount > 0 && (
+            <span
+              className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-5 tabular-nums text-primary-foreground"
+              data-testid="daily-review-count"
+            >
+              {dailyReviewCount}
+            </span>
+          )}
         </Link>
         <Link
           activeProps={NAV_ACTIVE}
