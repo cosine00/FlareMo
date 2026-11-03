@@ -5,10 +5,16 @@ import {
   walkNextQuerySchema,
 } from "@flaremo/contracts";
 import {
+  createInsightPreset,
+  createInsightReport,
+  deleteInsightPreset,
+  deleteInsightReport,
   getMemoById,
   getRandomMemo,
   getWalkNextMemo,
   listDailyReviewMemos,
+  listInsightPresets,
+  listInsightReports,
   listRelatedMemos,
   semanticSearchMemos,
 } from "@flaremo/domain";
@@ -26,6 +32,62 @@ import { jsonError } from "../../http";
 import { parseExcludeParam, serializeMemosWithAttachments } from "./helpers";
 
 export function registerReviewRoutes(app: Hono<HonoBindings>) {
+  app.get("/insights", async (c) => {
+    try {
+      const { db, user } = await getRequestContext(c);
+      return c.json({ reports: await listInsightReports(db, user) });
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  });
+
+  app.delete("/insights/:id", async (c) => {
+    try {
+      const { db, user } = await getRequestContext(c);
+      await deleteInsightReport(db, user, `insights/${c.req.param("id")}`);
+      return c.json({ deleted: true });
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  });
+
+  app.get("/insight-presets", async (c) => {
+    try {
+      const { db, user } = await getRequestContext(c);
+      return c.json({ presets: await listInsightPresets(db, user) });
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  });
+
+  app.post("/insight-presets", async (c) => {
+    try {
+      const input = z
+        .object({
+          name: z.string().trim().min(1).max(40),
+          prompt: z.string().trim().min(1).max(1_000),
+        })
+        .strict()
+        .safeParse(await c.req.json().catch(() => null));
+      if (!input.success)
+        return c.json({ error: { message: "Invalid insight preset" } }, 400);
+      const { db, user } = await getRequestContext(c);
+      return c.json(await createInsightPreset(db, user, input.data), 201);
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  });
+
+  app.delete("/insight-presets/:id", async (c) => {
+    try {
+      const { db, user } = await getRequestContext(c);
+      await deleteInsightPreset(db, user, c.req.param("id"));
+      return c.json({ deleted: true });
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  });
+
   app.get(
     "/review/daily",
     zValidator("query", dailyReviewQuerySchema),
@@ -41,6 +103,61 @@ export function registerReviewRoutes(app: Hono<HonoBindings>) {
       }
     },
   );
+
+  app.post("/insights", async (c) => {
+    try {
+      const input = z
+        .object({
+          memoIds: z.array(z.string().trim().min(1).max(128)).min(1).max(100),
+          perspective: z.string().trim().max(1_000).optional(),
+          perspectiveLabel: z.string().trim().max(100).optional(),
+          range: z.enum(["7d", "30d", "90d", "all"]),
+          tag: z.string().trim().max(200).optional(),
+        })
+        .strict()
+        .safeParse(await c.req.json().catch(() => null));
+      if (!input.success)
+        return c.json({ error: { message: "Invalid insight request" } }, 400);
+      const { db, user } = await getRequestContext(c);
+      const rows = [];
+      for (const id of new Set(input.data.memoIds)) {
+        rows.push(await getMemoById(db, user, `memos/${id}`));
+      }
+      const sources = rows.map((memo) => ({
+        id: memo.id,
+        content: memo.content,
+        createTime: memo.createdAt,
+      }));
+      const insight = await generateMemoInsight(
+        c.env,
+        db,
+        user,
+        sources,
+        input.data.perspective,
+      );
+      const report = await createInsightReport(db, user, {
+        content: insight.content,
+        model: insight.model,
+        perspective: input.data.perspective,
+        perspectiveLabel: input.data.perspectiveLabel,
+        range: input.data.range,
+        tag: input.data.tag,
+        sources: sources.map((source, index) => ({
+          index: index + 1,
+          memo: source.id,
+          content: source.content.slice(0, 240),
+          create_time: source.createTime,
+        })),
+      });
+      return c.json({
+        ...insight,
+        report,
+        sources: report.sources,
+      });
+    } catch (error) {
+      return jsonError(c, error);
+    }
+  });
 
   app.post("/memos/:id/insight", async (c) => {
     try {

@@ -4,14 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { isInstanceOwner, type TeamViewer } from "./team-permissions";
 
 /**
- * Instance-wide integration settings (transactional email, OAuth providers)
+ * Instance-wide integration settings (AI, transactional email, OAuth)
  * that carry secrets. Rows live in `integration_config` under the same
  * encrypted-envelope discipline as `voice_service_config`: the caller seals
  * the payload and this module only stores the ciphertext plus a revision
  * used for optimistic concurrency between concurrently open admin forms.
  */
 
-export type IntegrationId = "email" | "oauth";
+export type IntegrationId = "ai" | "email" | "oauth";
 
 export function canManageInstanceIntegrations(
   user: TeamViewer | null,

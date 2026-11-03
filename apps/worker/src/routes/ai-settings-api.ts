@@ -1,13 +1,21 @@
 import {
   canManageInstanceIntegrations,
   ForbiddenError,
+  readIntegrationConfig,
   setAiInsightModel,
+  setAiMemoUrlTemplate,
+  writeIntegrationConfig,
 } from "@flaremo/domain";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { resolveAiInsightConfig } from "../ai-insight";
 import { getBrowserRequestContext, type HonoBindings } from "../context";
 import { jsonError } from "../http";
+import {
+  integrationEncryptionSecret,
+  sealIntegrationCredentials,
+} from "../integrations/secret-box";
 
 export const aiSettingsApi = new Hono<HonoBindings>();
 
@@ -22,6 +30,7 @@ aiSettingsApi.use("*", async (c, next) => {
     return jsonError(c, error);
   }
 });
+aiSettingsApi.use("*", bodyLimit({ maxSize: 4096 }));
 
 aiSettingsApi.get("/", async (c) => {
   try {
@@ -35,16 +44,43 @@ aiSettingsApi.get("/", async (c) => {
 aiSettingsApi.put("/", async (c) => {
   try {
     const input = z
-      .object({ model: z.string().trim().min(1).max(128) })
+      .object({
+        model: z.string().trim().min(1).max(128),
+        apiKey: z.string().trim().max(1024).optional(),
+        memoUrlTemplate: z
+          .string()
+          .trim()
+          .max(500)
+          .refine(
+            (value) =>
+              value.includes("{id}") &&
+              URL.canParse(value.replace("{id}", "1")),
+          ),
+      })
       .strict()
       .safeParse(await c.req.json().catch(() => null));
     if (!input.success)
-      return c.json({ error: { message: "Invalid AI model" } }, 400);
+      return c.json({ error: { message: "Invalid AI settings" } }, 400);
     const { db, user } = await getBrowserRequestContext(c);
-    return c.json({
-      configured: Boolean(c.env.DEEPSEEK_API_KEY?.trim()),
-      model: await setAiInsightModel(db, user, input.data.model),
-    });
+    if (input.data.apiKey) {
+      const row = await readIntegrationConfig(db, "ai");
+      const ciphertext = await sealIntegrationCredentials(
+        "ai",
+        integrationEncryptionSecret(c.env),
+        { apiKey: input.data.apiKey },
+      );
+      if (
+        !(await writeIntegrationConfig(db, "ai", row?.revision ?? null, {
+          enabled: true,
+          ciphertext,
+        }))
+      ) {
+        return c.json({ error: { message: "Configuration changed" } }, 409);
+      }
+    }
+    await setAiInsightModel(db, user, input.data.model);
+    await setAiMemoUrlTemplate(db, user, input.data.memoUrlTemplate);
+    return c.json(await resolveAiInsightConfig(c.env, db, user));
   } catch (error) {
     return jsonError(c, error);
   }

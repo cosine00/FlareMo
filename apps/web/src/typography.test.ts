@@ -2,7 +2,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync(new URL("./index.css", import.meta.url), "utf8");
+// CRLF-tolerant: a Windows checkout with autocrlf hands this file CRLF, and
+// every literal-string anchor below (e.g. the font-synthesis guard) would
+// silently miss against "\r\n".
+const css = readFileSync(
+  new URL("./index.css", import.meta.url),
+  "utf8",
+).replace(/\r\n/g, "\n");
 
 /**
  * Typography contract for the app shell. Every assertion here guards a silent

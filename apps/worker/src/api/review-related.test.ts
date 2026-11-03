@@ -1,11 +1,14 @@
 import type { Miniflare } from "miniflare";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { openIntegrationCredentials } from "../integrations/secret-box";
 import { createAppTestHarness, json } from "../test-support/app";
 import { createTestRuntime } from "../test-support/runtime";
 
 let mf: Miniflare;
 let env: Env;
 let sessionCookie: string;
+const TEST_AI_ENCRYPTION_KEY =
+  "test-only-ai-integration-encryption-key-long-enough";
 
 const { fetchApp, createMemo, bootstrapAndSignIn } = createAppTestHarness(
   () => ({
@@ -19,7 +22,10 @@ describe("FlareMo review and related memos API", () => {
     ({ runtime: mf, env } = await createTestRuntime({
       databaseName: "flaremo-test",
       attachmentsName: "flaremo-attachments-test",
-      env: { FLAREMO_DEPLOY_REPOSITORY: "example/flaremo" },
+      env: {
+        FLAREMO_DEPLOY_REPOSITORY: "example/flaremo",
+        FLAREMO_INTEGRATION_CONFIG_KEY: TEST_AI_ENCRYPTION_KEY,
+      },
     }));
     sessionCookie = await bootstrapAndSignIn();
   });
@@ -225,17 +231,10 @@ describe("FlareMo review and related memos API", () => {
     expect(aiSettings).toEqual({
       configured: false,
       model: "deepseek-chat",
-    });
-    const updatedAiSettings = await json(
-      await fetchApp("http://flaremo.test/api/app/admin/ai-settings", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ model: "deepseek-reasoner" }),
-      }),
-    );
-    expect(updatedAiSettings).toEqual({
-      configured: false,
-      model: "deepseek-reasoner",
+      memoUrlTemplate: "https://hux.ink/m/{id}/",
+      source: "none",
+      apiKeyPreview: null,
+      unreadable: false,
     });
     expect(
       await fetchApp(`http://flaremo.test/api/app/memos/${tagA.id}/insight`, {
@@ -244,6 +243,93 @@ describe("FlareMo review and related memos API", () => {
         body: JSON.stringify({ scope: "current" }),
       }),
     ).toMatchObject({ status: 503 });
+    expect(
+      await fetchApp("http://flaremo.test/api/app/insights", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          memoIds: [tagA.id, tagB.id],
+          perspective: "Find a shared theme",
+          range: "30d",
+        }),
+      }),
+    ).toMatchObject({ status: 503 });
+    expect(
+      await fetchApp("http://flaremo.test/api/app/insights", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ memoIds: [] }),
+      }),
+    ).toMatchObject({ status: 400 });
+    const preset = await json(
+      await fetchApp("http://flaremo.test/api/app/insight-presets", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Weekly reflection",
+          prompt: "Find the most important change this week",
+        }),
+      }),
+    );
+    expect(preset).toMatchObject({
+      name: "Weekly reflection",
+      prompt: "Find the most important change this week",
+    });
+    expect(
+      await json(await fetchApp("http://flaremo.test/api/app/insight-presets")),
+    ).toMatchObject({ presets: [{ id: preset.id }] });
+    expect(
+      await fetchApp(
+        `http://flaremo.test/api/app/insight-presets/${preset.id}`,
+        { method: "DELETE" },
+      ),
+    ).toMatchObject({ status: 200 });
+    const updatedAiSettings = await json(
+      await fetchApp("http://flaremo.test/api/app/admin/ai-settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model: "deepseek-reasoner",
+          memoUrlTemplate: "https://hux.ink/m/{id}/",
+          apiKey: "test-ai-secret",
+        }),
+      }),
+    );
+    expect(updatedAiSettings).toEqual({
+      configured: true,
+      model: "deepseek-reasoner",
+      memoUrlTemplate: "https://hux.ink/m/{id}/",
+      source: "database",
+      apiKeyPreview: "****cret",
+      unreadable: false,
+    });
+    const storedAi = await env.DB.prepare(
+      "SELECT ciphertext FROM integration_config WHERE id = 'ai'",
+    ).first<{ ciphertext: string }>();
+    expect(storedAi?.ciphertext ?? "").not.toContain("test-ai-secret");
+    const openedAi = await openIntegrationCredentials(
+      "ai",
+      TEST_AI_ENCRYPTION_KEY,
+      storedAi?.ciphertext ?? "",
+      (value) => value as { apiKey: string },
+    );
+    expect(openedAi.apiKey).toBe("test-ai-secret");
+    const modelOnlyUpdate = await json(
+      await fetchApp("http://flaremo.test/api/app/admin/ai-settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model: "custom-insight-model",
+          memoUrlTemplate: "https://hux.ink/m/{id}/",
+        }),
+      }),
+    );
+    expect(modelOnlyUpdate).toMatchObject({
+      configured: true,
+      model: "custom-insight-model",
+      source: "database",
+      apiKeyPreview: "****cret",
+    });
   });
 
   it("serves related memos ranked by relation and shared tags", async () => {

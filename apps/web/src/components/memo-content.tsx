@@ -392,6 +392,24 @@ export const MemoContent = memo(function MemoContent({
             return <span {...props}>{children}</span>;
           },
           a({ href, children, node: _node, ...props }) {
+            if (
+              href?.startsWith("#insight-source-") ||
+              props.title === "insight-citation"
+            ) {
+              return (
+                <a
+                  {...props}
+                  className="mx-0.5 inline-block align-super text-[0.7em] font-semibold leading-none text-brand-600 no-underline hover:text-brand-700 dark:text-brand-400"
+                  href={href}
+                  rel={
+                    href?.startsWith("http") ? "noreferrer noopener" : undefined
+                  }
+                  target={href?.startsWith("http") ? "_blank" : undefined}
+                >
+                  {children}
+                </a>
+              );
+            }
             const tag = tagFromHref(href);
             if (tag !== null) {
               return onTagClick ? (

@@ -8,9 +8,10 @@ export const voiceServiceConfig = sqliteTable("voice_service_config", {
   ciphertext: text("ciphertext"),
 });
 
-// Instance-wide integration settings (email sending, OAuth providers) that
+// Instance-wide integration settings (AI, email sending, OAuth providers) that
 // carry secrets in the same encrypted-envelope pattern as voice_service_config.
-// One row per integration id ("email", "oauth"); never part of memo exports.
+// One row per integration id ("ai", "email", "oauth"); never part of memo
+// exports.
 export const integrationConfig = sqliteTable("integration_config", {
   id: text("id").primaryKey(),
   revision: text("revision").notNull(),

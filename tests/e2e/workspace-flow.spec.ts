@@ -48,6 +48,39 @@ test("hides the on-this-day navigation badge when there are no notes", async ({
   await expect(page.getByTestId("daily-review-count")).toHaveCount(0);
 });
 
+test("opens AI insight from the sidebar between wander and explore", async ({
+  page,
+}) => {
+  await page.route("**/api/app/memos?*", (route) =>
+    route.fulfill({ json: { memos: [note("insight-source")] } }),
+  );
+  await page.goto("/");
+  const wander = page.getByRole("link", { name: /wander|记忆漫游/i }).first();
+  const insight = page
+    .getByRole("link", { name: /AI insight|AI 洞察/i })
+    .first();
+  const explore = page.getByRole("link", { name: /explore|探索/i }).first();
+  const order = await Promise.all([
+    wander.evaluate((element) =>
+      Array.from(element.parentElement?.children ?? []).indexOf(element),
+    ),
+    insight.evaluate((element) =>
+      Array.from(element.parentElement?.children ?? []).indexOf(element),
+    ),
+    explore.evaluate((element) =>
+      Array.from(element.parentElement?.children ?? []).indexOf(element),
+    ),
+  ]);
+  expect(order[0]).toBeLessThan(order[1]);
+  expect(order[1]).toBeLessThan(order[2]);
+  await insight.click();
+  await expect(page).toHaveURL(/\/insights$/);
+  await expect(
+    page.getByRole("heading", { name: /AI insight|AI 洞察/i }),
+  ).toBeVisible();
+  await expect(page.getByText("Workspace note insight-source")).toBeVisible();
+});
+
 test("keeps loaded cards mounted when pagination fails and retries the missing page", async ({
   page,
 }) => {

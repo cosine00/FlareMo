@@ -21,6 +21,15 @@ describe("MemoContent", () => {
     const html = renderToStaticMarkup(<MemoContent content={raw} />);
     expect(html).toContain("<p>第一段</p>\n<p>第二段</p>");
   });
+
+  it("renders insight citations as compact superscript links", () => {
+    const html = renderToStaticMarkup(
+      <MemoContent content="结论[4](#insight-source-current-4)" />,
+    );
+    expect(html).toContain('href="#insight-source-current-4"');
+    expect(html).toContain("align-super");
+    expect(html).toContain(">4</a>");
+  });
 });
 
 describe("MemoContent image grouping", () => {

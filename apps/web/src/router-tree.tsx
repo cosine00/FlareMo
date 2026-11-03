@@ -99,6 +99,11 @@ const RandomWalkPage = lazy(() =>
     default: module.RandomWalkPage,
   })),
 );
+const AiInsightPage = lazy(() =>
+  import("@/pages/ai-insight-page").then((module) => ({
+    default: module.AiInsightPage,
+  })),
+);
 const MemoryPage = lazy(() =>
   import("@/pages/memory-page").then((module) => ({
     default: module.MemoryPage,
@@ -375,6 +380,22 @@ const randomWalkRoute = createRoute({
   component: RandomWalkRoutePage,
 });
 
+function AiInsightRoutePage() {
+  return (
+    <AuthenticatedRoute>
+      <Suspense fallback={<RouteLoading />}>
+        <AiInsightPage />
+      </Suspense>
+    </AuthenticatedRoute>
+  );
+}
+
+const aiInsightRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/insights",
+  component: AiInsightRoutePage,
+});
+
 function MemoryRoutePage() {
   return (
     <AuthenticatedRoute>
@@ -515,6 +536,7 @@ const router = createRouter({
     accountRoute,
     dailyReviewRoute,
     randomWalkRoute,
+    aiInsightRoute,
     memoryRoute,
     projectsRoute,
     captureRoute,

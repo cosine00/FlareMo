@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
+  BrainCircuitIcon,
   BrainIcon,
   CalendarDaysIcon,
   ChevronRightIcon,
@@ -245,6 +246,15 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
         >
           <FootprintsIcon />
           <span className="min-w-0 flex-1 truncate">{t("nav.randomWalk")}</span>
+        </Link>
+        <Link
+          activeProps={NAV_ACTIVE}
+          className={NAV_ITEM}
+          onClick={onNavigate}
+          to="/insights"
+        >
+          <BrainCircuitIcon />
+          <span className="min-w-0 flex-1 truncate">{t("nav.aiInsight")}</span>
         </Link>
         {/* The public square, one click from the private timeline: it renders
             the same notes the outside world can read, in the same shape. */}
