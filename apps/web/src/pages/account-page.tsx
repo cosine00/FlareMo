@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { TIMELINE_SEARCH } from "@/lib/timeline-search";
 import { cn } from "@/lib/utils";
 import { SettingsRow, SettingsSectionGroup } from "./account/apple-settings-ui";
+import type { SettingsSection } from "./account/settings-nav";
 import {
   roleLabel,
   SettingsSectionContent,
@@ -31,9 +32,11 @@ import { useAccountPageState } from "./account/use-account-page-state";
 export function AccountSettingsDialog({
   open,
   onClose,
+  mode = "account",
 }: {
   open: boolean;
   onClose: () => void;
+  mode?: "account" | "admin";
 }) {
   const {
     accountPanel,
@@ -54,8 +57,20 @@ export function AccountSettingsDialog({
     showVoiceSettings,
     t,
     vectorUsageQuery,
-  } = useAccountPageState({ open });
+  } = useAccountPageState({ open, mode });
   const popupRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const dialogTitle = t(
+    mode === "admin" ? "settings.group.admin" : "settings.title",
+  );
+  const openSection = (nextSection: SettingsSection) => {
+    if (nextSection === "memory") {
+      onClose();
+      void navigate({ to: "/memory" });
+      return;
+    }
+    setSection(nextSection);
+  };
 
   return (
     <Dialog
@@ -86,7 +101,7 @@ export function AccountSettingsDialog({
           {/* Mobile Master Navigation Bar */}
           <div className="flex shrink-0 items-center justify-between border-b bg-background/90 px-4 py-3 backdrop-blur-md">
             <DialogTitle className="text-lg font-semibold tracking-tight">
-              {t("settings.title")}
+              {dialogTitle}
             </DialogTitle>
             <Button
               variant="ghost"
@@ -101,52 +116,56 @@ export function AccountSettingsDialog({
           {/* Mobile Master List */}
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
             {/* Apple ID Style Account Header */}
-            <button
-              type="button"
-              onClick={() => {
-                setSection("account");
-                setMobileView("detail");
-              }}
-              className="flex w-full items-center justify-between gap-3.5 rounded-2xl border border-border/60 bg-card p-4 text-left shadow-2xs cursor-pointer hover:bg-accent/40 active:bg-accent/60 transition-colors"
-            >
-              <div className="flex min-w-0 items-center gap-3.5">
-                <Avatar
-                  src={
-                    meQuery.data?.avatar_url ?? session.data?.user.image ?? null
-                  }
-                  name={
-                    meQuery.data?.name ??
-                    session.data?.user.name ??
-                    session.data?.user.username ??
-                    ""
-                  }
-                  size="xl"
-                />
-                <div className="min-w-0">
-                  <div className="truncate text-base font-semibold text-foreground">
-                    {meQuery.data?.name ??
+            {mode === "account" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSection("account");
+                  setMobileView("detail");
+                }}
+                className="flex w-full items-center justify-between gap-3.5 rounded-2xl border border-border/60 bg-card p-4 text-left shadow-2xs cursor-pointer hover:bg-accent/40 active:bg-accent/60 transition-colors"
+              >
+                <div className="flex min-w-0 items-center gap-3.5">
+                  <Avatar
+                    src={
+                      meQuery.data?.avatar_url ??
+                      session.data?.user.image ??
+                      null
+                    }
+                    name={
+                      meQuery.data?.name ??
                       session.data?.user.name ??
-                      session.data?.user.username}
-                  </div>
-                  <div className="truncate text-xs text-muted-foreground mt-0.5">
-                    {session.data?.user.username
-                      ? `@${session.data.user.username}`
-                      : session.data?.user.email}
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    {meQuery.data?.role && (
-                      <Badge
-                        variant="secondary"
-                        className="h-4 px-1.5 text-xs font-normal"
-                      >
-                        {roleLabel(meQuery.data?.role, t)}
-                      </Badge>
-                    )}
+                      session.data?.user.username ??
+                      ""
+                    }
+                    size="xl"
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold text-foreground">
+                      {meQuery.data?.name ??
+                        session.data?.user.name ??
+                        session.data?.user.username}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground mt-0.5">
+                      {session.data?.user.username
+                        ? `@${session.data.user.username}`
+                        : session.data?.user.email}
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      {meQuery.data?.role && (
+                        <Badge
+                          variant="secondary"
+                          className="h-4 px-1.5 text-xs font-normal"
+                        >
+                          {roleLabel(meQuery.data?.role, t)}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <ChevronRightIcon className="size-5 text-muted-foreground/40 shrink-0" />
-            </button>
+                <ChevronRightIcon className="size-5 text-muted-foreground/40 shrink-0" />
+              </button>
+            )}
 
             {/* Mobile Nav Groups */}
             {navGroups.map((group) => (
@@ -162,8 +181,8 @@ export function AccountSettingsDialog({
                     label={item.label}
                     chevron
                     onClick={() => {
-                      setSection(item.id);
-                      setMobileView("detail");
+                      openSection(item.id);
+                      if (item.id !== "memory") setMobileView("detail");
                     }}
                   />
                 ))}
@@ -201,7 +220,7 @@ export function AccountSettingsDialog({
               variant="ghost"
             >
               <ChevronLeftIcon className="size-5 rtl:rotate-180" />
-              <span>{t("settings.title")}</span>
+              <span>{dialogTitle}</span>
             </Button>
             <h2 className="truncate px-2 font-heading text-sm font-semibold tracking-tight text-foreground">
               {activeLabel}
@@ -247,54 +266,58 @@ export function AccountSettingsDialog({
         <aside className="hidden shrink-0 flex-col border-r bg-muted/30 p-3 sm:flex sm:w-64">
           <div className="flex items-center justify-between px-2 pt-1 pb-2">
             <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
-              {t("settings.title")}
+              {dialogTitle}
             </DialogTitle>
           </div>
 
           {/* Compact User Header in Sidebar */}
-          <button
-            type="button"
-            onClick={() => setSection("account")}
-            className={cn(
-              "mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-start text-foreground transition-colors",
-              section === "account"
-                ? "bg-card shadow-xs ring-1 ring-border/70 dark:bg-muted"
-                : "hover:bg-muted/70",
-            )}
-          >
-            <Avatar
-              src={meQuery.data?.avatar_url ?? session.data?.user.image ?? null}
-              name={
-                meQuery.data?.name ??
-                session.data?.user.name ??
-                session.data?.user.username ??
-                ""
-              }
-              size="sm"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <p className="truncate text-sm font-semibold leading-tight text-foreground">
-                  {meQuery.data?.name ??
-                    session.data?.user.name ??
-                    session.data?.user.username}
+          {mode === "account" && (
+            <button
+              type="button"
+              onClick={() => setSection("account")}
+              className={cn(
+                "mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-start text-foreground transition-colors",
+                section === "account"
+                  ? "bg-card shadow-xs ring-1 ring-border/70 dark:bg-muted"
+                  : "hover:bg-muted/70",
+              )}
+            >
+              <Avatar
+                src={
+                  meQuery.data?.avatar_url ?? session.data?.user.image ?? null
+                }
+                name={
+                  meQuery.data?.name ??
+                  session.data?.user.name ??
+                  session.data?.user.username ??
+                  ""
+                }
+                size="sm"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                    {meQuery.data?.name ??
+                      session.data?.user.name ??
+                      session.data?.user.username}
+                  </p>
+                  {meQuery.data?.role && (
+                    <Badge
+                      variant="secondary"
+                      className="h-4 px-1.5 text-xs font-normal"
+                    >
+                      {roleLabel(meQuery.data?.role, t)}
+                    </Badge>
+                  )}
+                </div>
+                <p className="truncate text-xs text-muted-foreground mt-0.5">
+                  {session.data?.user.username
+                    ? `@${session.data.user.username}`
+                    : t("settings.group.account")}
                 </p>
-                {meQuery.data?.role && (
-                  <Badge
-                    variant="secondary"
-                    className="h-4 px-1.5 text-xs font-normal"
-                  >
-                    {roleLabel(meQuery.data?.role, t)}
-                  </Badge>
-                )}
               </div>
-              <p className="truncate text-xs text-muted-foreground mt-0.5">
-                {session.data?.user.username
-                  ? `@${session.data.user.username}`
-                  : t("settings.group.account")}
-              </p>
-            </div>
-          </button>
+            </button>
+          )}
 
           {/* Sidebar Nav Items */}
           <nav className="flex-1 overflow-y-auto flex flex-col gap-3 py-1">
@@ -316,7 +339,7 @@ export function AccountSettingsDialog({
                       type="button"
                       key={item.id}
                       aria-current={active ? "true" : undefined}
-                      onClick={() => setSection(item.id)}
+                      onClick={() => openSection(item.id)}
                       className={cn(
                         "flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-start text-[13.5px] outline-none transition-[background-color,color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/25 [&>svg]:text-muted-foreground",
                         active
@@ -334,19 +357,21 @@ export function AccountSettingsDialog({
           </nav>
 
           {/* Desktop Sign Out */}
-          <div className="mt-auto pt-3 border-t border-border/40">
-            <Button
-              className="w-full justify-start gap-2.5 px-2.5 text-[13.5px] text-foreground/70"
-              onClick={() => void handleSignOut()}
-              variant="ghost"
-            >
-              <LogOutIcon
-                data-icon="inline-start"
-                className="size-4 shrink-0"
-              />
-              {t("auth.signOut")}
-            </Button>
-          </div>
+          {mode === "account" && (
+            <div className="mt-auto pt-3 border-t border-border/40">
+              <Button
+                className="w-full justify-start gap-2.5 px-2.5 text-[13.5px] text-foreground/70"
+                onClick={() => void handleSignOut()}
+                variant="ghost"
+              >
+                <LogOutIcon
+                  data-icon="inline-start"
+                  className="size-4 shrink-0"
+                />
+                {t("auth.signOut")}
+              </Button>
+            </div>
+          )}
         </aside>
 
         {/* Desktop Detail Pane */}

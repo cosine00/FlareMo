@@ -556,6 +556,8 @@ const messages = {
   "timeline.layout": "Disposition",
   "timeline.layoutCards": "Cartes",
   "timeline.layoutTimeline": "Chronologie",
+  "timeline.showImages": "Afficher les images",
+  "timeline.hideImages": "Masquer les images",
   "timeline.imageOnly": "(image)",
   "imageViewer.previous": "Image précédente",
   "imageViewer.next": "Image suivante",

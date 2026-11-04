@@ -501,6 +501,8 @@ const messages = {
   "timeline.layout": "视图布局",
   "timeline.layoutCards": "卡片视图",
   "timeline.layoutTimeline": "时间线视图",
+  "timeline.showImages": "显示图片",
+  "timeline.hideImages": "隐藏图片",
   "timeline.imageOnly": "（图片）",
   "imageViewer.previous": "上一张",
   "imageViewer.next": "下一张",

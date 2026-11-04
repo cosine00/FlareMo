@@ -44,6 +44,7 @@ export type WorkspaceSidebarContent = {
   onExport: () => Promise<void>;
   onImportFile: (bundle: unknown) => Promise<void>;
   onOpenSettings: () => void;
+  onOpenSystemManagement: () => void;
   onRenameTag: (from: string, to: string) => void;
   onTagChange: (tag?: string) => void;
   onToggleCollapsed: () => void;
@@ -71,6 +72,7 @@ function WorkspaceExplorerPanel({
   onImportFile,
   onNavigate,
   onOpenSettings,
+  onOpenSystemManagement,
   onRenameTag,
   onTagChange,
   onToggleCollapsed,
@@ -95,6 +97,11 @@ function WorkspaceExplorerPanel({
     onOpenSettings();
   }, [onNavigate, onOpenSettings]);
 
+  const handleOpenSystemManagement = useCallback(() => {
+    onNavigate?.();
+    onOpenSystemManagement();
+  }, [onNavigate, onOpenSystemManagement]);
+
   const handleDaySelect = useCallback(
     (date: string) => {
       void navigate({
@@ -112,8 +119,14 @@ function WorkspaceExplorerPanel({
   );
 
   const header = useMemo(
-    () => <UserMenu onOpenSettings={handleOpenSettings} user={user} />,
-    [handleOpenSettings, user],
+    () => (
+      <UserMenu
+        onOpenSettings={handleOpenSettings}
+        onOpenSystemManagement={handleOpenSystemManagement}
+        user={user}
+      />
+    ),
+    [handleOpenSettings, handleOpenSystemManagement, user],
   );
 
   const headerAction = useMemo(

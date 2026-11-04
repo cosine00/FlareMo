@@ -541,6 +541,8 @@ const messages = {
   "timeline.layout": "보기 레이아웃",
   "timeline.layoutCards": "카드",
   "timeline.layoutTimeline": "타임라인",
+  "timeline.showImages": "이미지 표시",
+  "timeline.hideImages": "이미지 숨기기",
   "timeline.imageOnly": "(이미지)",
   "imageViewer.previous": "이전 이미지",
   "imageViewer.next": "다음 이미지",

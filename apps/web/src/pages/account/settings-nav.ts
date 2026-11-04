@@ -1,6 +1,7 @@
 import {
   ArrowDownUpIcon,
   BellRingIcon,
+  BrainIcon,
   FileUpIcon,
   GaugeIcon,
   type LucideIcon,
@@ -24,7 +25,8 @@ export type SettingsSection =
   | "team"
   | "branding"
   | "plugins"
-  | "integrations";
+  | "integrations"
+  | "memory";
 
 export type NavItem = {
   id: SettingsSection;
@@ -45,94 +47,99 @@ export function settingsNavGroups({
   showVoiceSettings,
   isTeamAdmin,
   isInstanceOwner,
+  mode = "account",
 }: {
   t: (key: TranslationKey) => string;
   showVoiceSettings: boolean;
   isTeamAdmin: boolean;
   isInstanceOwner: boolean;
+  mode?: "account" | "admin";
 }): NavGroup[] {
-  return [
-    {
-      titleKey: "settings.group.preferences",
-      items: [
-        {
-          icon: SunMoonIcon,
-          iconBg: "bg-muted text-muted-foreground",
-          id: "appearance",
-          label: t("settings.nav.appearance"),
-        },
-        {
-          icon: FileUpIcon,
-          iconBg: "bg-muted text-muted-foreground",
-          id: "uploads",
-          label: t("settings.nav.uploads"),
-        },
-        {
-          icon: BellRingIcon,
-          iconBg: "bg-muted text-muted-foreground",
-          id: "push",
-          label: t("settings.nav.push"),
-        },
-        ...(showVoiceSettings
-          ? [
-              {
-                icon: MicIcon,
-                iconBg: "bg-muted text-muted-foreground",
-                id: "voice" as const,
-                label: t("settings.nav.voice"),
-              },
-            ]
-          : []),
-        {
-          icon: GaugeIcon,
-          iconBg: "bg-muted text-muted-foreground",
-          id: "usage",
-          label: t("auth.tab.usage"),
-        },
-        {
-          icon: ArrowDownUpIcon,
-          iconBg: "bg-muted text-muted-foreground",
-          id: "transfer",
-          label: t("settings.nav.transfer"),
-        },
-      ],
-    },
-    ...(isTeamAdmin
-      ? [
-          {
-            titleKey: "settings.group.admin" as const,
-            items: [
-              {
-                icon: UsersIcon,
-                iconBg: "bg-muted text-muted-foreground",
-                id: "team" as const,
-                label: t("auth.tab.admin"),
-              },
-              ...(isInstanceOwner
-                ? [
-                    {
-                      icon: PaintbrushIcon,
-                      iconBg: "bg-muted text-muted-foreground",
-                      id: "branding" as const,
-                      label: t("auth.tab.branding"),
-                    },
-                    {
-                      icon: PuzzleIcon,
-                      iconBg: "bg-muted text-muted-foreground",
-                      id: "plugins" as const,
-                      label: t("auth.tab.plugins"),
-                    },
-                    {
-                      icon: WebhookIcon,
-                      iconBg: "bg-muted text-muted-foreground",
-                      id: "integrations" as const,
-                      label: t("settings.nav.integrations"),
-                    },
-                  ]
-                : []),
-            ],
-          },
-        ]
-      : []),
-  ];
+  const preferences: NavGroup = {
+    titleKey: "settings.group.preferences",
+    items: [
+      {
+        icon: SunMoonIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "appearance",
+        label: t("settings.nav.appearance"),
+      },
+      {
+        icon: FileUpIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "uploads",
+        label: t("settings.nav.uploads"),
+      },
+      {
+        icon: BellRingIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "push",
+        label: t("settings.nav.push"),
+      },
+      ...(showVoiceSettings
+        ? [
+            {
+              icon: MicIcon,
+              iconBg: "bg-muted text-muted-foreground",
+              id: "voice" as const,
+              label: t("settings.nav.voice"),
+            },
+          ]
+        : []),
+      {
+        icon: GaugeIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "usage",
+        label: t("auth.tab.usage"),
+      },
+      {
+        icon: ArrowDownUpIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "transfer",
+        label: t("settings.nav.transfer"),
+      },
+    ],
+  };
+  const administration: NavGroup = {
+    titleKey: "settings.group.admin",
+    items: [
+      {
+        icon: BrainIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "memory",
+        label: t("nav.memory"),
+      },
+      {
+        icon: UsersIcon,
+        iconBg: "bg-muted text-muted-foreground",
+        id: "team",
+        label: t("auth.tab.admin"),
+      },
+      ...(isInstanceOwner
+        ? [
+            {
+              icon: PaintbrushIcon,
+              iconBg: "bg-muted text-muted-foreground",
+              id: "branding" as const,
+              label: t("auth.tab.branding"),
+            },
+            {
+              icon: PuzzleIcon,
+              iconBg: "bg-muted text-muted-foreground",
+              id: "plugins" as const,
+              label: t("auth.tab.plugins"),
+            },
+            {
+              icon: WebhookIcon,
+              iconBg: "bg-muted text-muted-foreground",
+              id: "integrations" as const,
+              label: t("settings.nav.integrations"),
+            },
+          ]
+        : []),
+    ],
+  };
+
+  if (mode === "admin") return isTeamAdmin ? [administration] : [];
+  return [preferences];
 }

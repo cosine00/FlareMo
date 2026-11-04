@@ -547,6 +547,8 @@ const messages = {
   "timeline.layout": "Вид ленты",
   "timeline.layoutCards": "Карточки",
   "timeline.layoutTimeline": "Хронология",
+  "timeline.showImages": "Показывать изображения",
+  "timeline.hideImages": "Скрывать изображения",
   "timeline.imageOnly": "(изображение)",
   "imageViewer.previous": "Предыдущее изображение",
   "imageViewer.next": "Следующее изображение",

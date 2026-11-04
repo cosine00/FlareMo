@@ -1,4 +1,10 @@
-import { LayoutGridIcon, ListIcon, PanelLeftOpenIcon } from "lucide-react";
+import {
+  ImageIcon,
+  ImageOffIcon,
+  LayoutGridIcon,
+  ListIcon,
+  PanelLeftOpenIcon,
+} from "lucide-react";
 import type { MemoSpace } from "@/api";
 import type { ExplorerView } from "@/components/flaremo-explorer";
 import { ScopeSwitcher } from "@/components/scope-switcher";
@@ -32,9 +38,11 @@ export function WorkspaceHeader({
   activeQuery,
   explorer,
   isTimelineScrolled,
+  imageMode,
   layout,
   mobileSheetOpen,
   setLayout,
+  setImageMode,
   setMobileSheetOpen,
   setQuery,
   setSpace,
@@ -50,9 +58,11 @@ export function WorkspaceHeader({
   activeQuery: string;
   explorer: WorkspaceSidebarContent;
   isTimelineScrolled: boolean;
+  imageMode: "full" | "icon";
   layout: TimelineLayout;
   mobileSheetOpen: boolean;
   setLayout: (layout: TimelineLayout) => void;
+  setImageMode: (mode: "full" | "icon") => void;
   setMobileSheetOpen: (open: boolean) => void;
   setQuery: (q: string) => void;
   setSpace: (space: MemoSpace) => void;
@@ -139,6 +149,30 @@ export function WorkspaceHeader({
               </Button>
             ))}
           </fieldset>
+          <Button
+            aria-label={t(
+              imageMode === "full"
+                ? "timeline.hideImages"
+                : "timeline.showImages",
+            )}
+            aria-pressed={imageMode === "full"}
+            className="hidden size-8.5 rounded-lg border border-border/60 bg-muted/40 text-muted-foreground shadow-2xs md:inline-flex"
+            size="icon-sm"
+            title={t(
+              imageMode === "full"
+                ? "timeline.hideImages"
+                : "timeline.showImages",
+            )}
+            type="button"
+            variant="ghost"
+            onClick={() => setImageMode(imageMode === "full" ? "icon" : "full")}
+          >
+            {imageMode === "full" ? (
+              <ImageIcon className="size-3.5" />
+            ) : (
+              <ImageOffIcon className="size-3.5" />
+            )}
+          </Button>
           <SpotlightSearchTrigger
             className="hidden md:flex"
             onClick={() => setSpotlightOpen(true)}

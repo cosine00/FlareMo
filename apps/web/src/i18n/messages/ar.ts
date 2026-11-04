@@ -535,6 +535,8 @@ const messages = {
   "timeline.layout": "تخطيط العرض",
   "timeline.layoutCards": "بطاقات",
   "timeline.layoutTimeline": "الخط الزمني",
+  "timeline.showImages": "إظهار الصور",
+  "timeline.hideImages": "إخفاء الصور",
   "timeline.imageOnly": "(صورة)",
   "imageViewer.previous": "الصورة السابقة",
   "imageViewer.next": "الصورة التالية",

@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   BrainCircuitIcon,
-  BrainIcon,
   CalendarDaysIcon,
   ChevronRightIcon,
   CompassIcon,
@@ -278,15 +277,6 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
             <span className="min-w-0 flex-1 truncate">{t("nav.capture")}</span>
           </Link>
         )}
-        <Link
-          activeProps={NAV_ACTIVE}
-          className={NAV_ITEM}
-          onClick={onNavigate}
-          to="/memory"
-        >
-          <BrainIcon />
-          <span className="min-w-0 flex-1 truncate">{t("nav.memory")}</span>
-        </Link>
         <Link
           activeProps={NAV_ACTIVE}
           className={NAV_ITEM}

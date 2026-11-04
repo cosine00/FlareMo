@@ -28,11 +28,19 @@ import { useAccountSettingsMutations } from "./use-account-settings-mutations";
  * assembled `accountPanel` prop bundle. `open` gates every query so a closed
  * dialog costs nothing.
  */
-export function useAccountPageState({ open }: { open: boolean }) {
+export function useAccountPageState({
+  open,
+  mode = "account",
+}: {
+  open: boolean;
+  mode?: "account" | "admin";
+}) {
   const { locale, t } = useI18n();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
-  const [section, setSection] = useState<SettingsSection>("account");
+  const [section, setSection] = useState<SettingsSection>(
+    mode === "admin" ? "team" : "account",
+  );
   const [mobileView, setMobileView] = useState<"master" | "detail">("master");
 
   const [username, setUsername] = useState("");
@@ -71,9 +79,10 @@ export function useAccountPageState({ open }: { open: boolean }) {
   // Reset mobile view to master whenever the dialog opens fresh
   useEffect(() => {
     if (open) {
+      setSection(mode === "admin" ? "team" : "account");
       setMobileView("master");
     }
-  }, [open]);
+  }, [mode, open]);
 
   useEffect(() => {
     if (session.data?.user.username) {
@@ -244,6 +253,7 @@ export function useAccountPageState({ open }: { open: boolean }) {
     showVoiceSettings,
     isTeamAdmin,
     isInstanceOwner,
+    mode,
   });
 
   const allItems = navGroups.flatMap((group) => group.items);

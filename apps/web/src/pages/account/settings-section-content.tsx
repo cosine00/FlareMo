@@ -127,5 +127,7 @@ export function SettingsSectionContent({
           <OauthSettingsCard />
         </div>
       ) : null;
+    case "memory":
+      return null;
   }
 }

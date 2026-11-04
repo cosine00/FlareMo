@@ -542,6 +542,8 @@ const messages = {
   "timeline.layout": "表示レイアウト",
   "timeline.layoutCards": "カード",
   "timeline.layoutTimeline": "タイムライン",
+  "timeline.showImages": "画像を表示",
+  "timeline.hideImages": "画像を非表示",
   "timeline.imageOnly": "（画像）",
   "imageViewer.previous": "前の画像",
   "imageViewer.next": "次の画像",

@@ -478,52 +478,32 @@ test("loads notes beyond the first page", async ({ page }) => {
   await expect(page.getByText(`${marker}-0`, { exact: true })).toBeVisible();
 });
 
-test("shows the installed version and safe update fallback", async ({
+test("does not expose a manual update check in the user menu", async ({
   page,
-  request,
 }) => {
-  // Resolve the version from the same API the UI renders, so a release bump
-  // does not silently break this UI contract check.
-  const health = await (
-    await request.get(`${E2E_BASE_URL}/api/app/health`)
-  ).json<{ version: string }>();
-  const version = `v${health.version}`;
-
-  await page.route("https://api.github.com/**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        tag_name: version,
-        name: version,
-        published_at: "2026-09-14T00:00:00Z",
-        html_url: `https://github.com/realchendahuang/FlareMo/releases/tag/${version}`,
-      }),
-    });
-  });
-
   await page.goto("/");
-
-  // The update check lives in the sidebar's user menu now; the dialog reports
-  // the installed version and, when no newer release exists, offers no upgrade
-  // action — only the release-notes link.
   await page
     .getByRole("button", { name: /FlareMo E2E Owner|E2E Owner/i })
     .first()
     .click();
-  await page
-    .getByRole("menuitem", { name: /check for updates|检查更新/i })
-    .click();
-
-  const dialog = page.locator('[role="dialog"]:visible').last();
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText(version);
   await expect(
-    dialog.getByRole("link", { name: /update guide|升级指南/i }),
+    page.getByRole("menuitem", { name: /check for updates|检查更新/i }),
   ).toHaveCount(0);
   await expect(
-    dialog.getByRole("link", { name: /release notes|版本说明/i }),
+    page.getByRole("menuitem", { name: /notifications|通知/i }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("menuitem", { name: /administration|系统管理/i }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /^memory$|^记忆$/i }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("menuitem", { name: /administration|系统管理/i })
+    .click();
+  const systemDialog = page.locator('[role="dialog"]:visible').last();
+  await systemDialog.getByRole("button", { name: /^memory$|^记忆$/i }).click();
+  await expect(page).toHaveURL(/\/memory$/);
 });
 
 test("creates, follows, reads, and removes memo relations", async ({

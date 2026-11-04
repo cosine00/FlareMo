@@ -9,7 +9,6 @@ import {
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import type { MemoVisibility, Share } from "@/api";
 import { MemoList } from "@/components/memo-list";
-import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { SpotlightSearch } from "@/components/spotlight-search";
 import { Button } from "@/components/ui/button";
 import { ShortcutsDialog } from "@/components/workspace/shortcuts-dialog";
@@ -47,6 +46,7 @@ const AccountSettingsDialog = lazy(() =>
 
 // Persisted so a collapsed desktop sidebar stays collapsed across reloads.
 const SIDEBAR_COLLAPSED_KEY = "flaremo.sidebar.collapsed";
+const TIMELINE_IMAGE_MODE_KEY = "flaremo.timeline.image-mode";
 
 // Breaks the App ↔ router-tree import cycle: the route tree renders the
 // workspace through this registry instead of importing `@/App`. Module-eval
@@ -77,6 +77,23 @@ export function FlareMoApp() {
   const mobileSearchRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const [layout, setLayoutState] = useState<TimelineLayout>(readTimelineLayout);
+  const [imageMode, setImageModeState] = useState<"full" | "icon">(() => {
+    try {
+      return localStorage.getItem(TIMELINE_IMAGE_MODE_KEY) === "icon"
+        ? "icon"
+        : "full";
+    } catch {
+      return "full";
+    }
+  });
+  const setImageMode = useCallback((next: "full" | "icon") => {
+    setImageModeState(next);
+    try {
+      localStorage.setItem(TIMELINE_IMAGE_MODE_KEY, next);
+    } catch {
+      // Persistence is best-effort; the in-memory choice still applies.
+    }
+  }, []);
   const setLayout = useCallback((next: TimelineLayout) => {
     setLayoutState(next);
     writeTimelineLayout(next);
@@ -85,6 +102,7 @@ export function FlareMoApp() {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const [systemManagementOpen, setSystemManagementOpen] = useState(false);
 
   const scrollToTop = useCallback(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -249,6 +267,7 @@ export function FlareMoApp() {
       onExport: handleExport,
       onImportFile: handleImportFile,
       onOpenSettings: () => setAccountSettingsOpen(true),
+      onOpenSystemManagement: () => setSystemManagementOpen(true),
       onRenameTag: (from, to) => renameTagMutation.mutate({ from, to }),
       onTagChange: setActiveTag,
       onToggleCollapsed: toggleSidebarCollapsed,
@@ -296,9 +315,11 @@ export function FlareMoApp() {
             activeQuery={dayFilter ? "" : query}
             explorer={sidebarContent}
             isTimelineScrolled={isTimelineScrolled}
+            imageMode={imageMode}
             layout={layout}
             mobileSheetOpen={mobileSheetOpen}
             setLayout={setLayout}
+            setImageMode={setImageMode}
             setMobileSheetOpen={setMobileSheetOpen}
             setQuery={setQuery}
             setSpace={setSpace}
@@ -426,6 +447,7 @@ export function FlareMoApp() {
                   )}
                 <MemoList
                   attachmentsByMemo={attachmentsByMemo}
+                  imageMode={imageMode}
                   layout={layout}
                   emptyDescription={
                     isSemanticSearch
@@ -517,6 +539,13 @@ export function FlareMoApp() {
             onClose={() => setAccountSettingsOpen(false)}
           />
         )}
+        {systemManagementOpen && (
+          <AccountSettingsDialog
+            mode="admin"
+            open
+            onClose={() => setSystemManagementOpen(false)}
+          />
+        )}
       </Suspense>
       <SpotlightSearch
         open={spotlightOpen}
@@ -540,10 +569,5 @@ export function FlareMoApp() {
 }
 
 export default function App() {
-  return (
-    <>
-      <PwaUpdatePrompt />
-      <AppRoutes />
-    </>
-  );
+  return <AppRoutes />;
 }

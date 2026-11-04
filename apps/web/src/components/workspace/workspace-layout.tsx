@@ -82,6 +82,7 @@ export function WorkspaceLayout({
   const navigate = useNavigate();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const [systemManagementOpen, setSystemManagementOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
@@ -156,6 +157,7 @@ export function WorkspaceLayout({
       onExport: handleExport,
       onImportFile: handleImportFile,
       onOpenSettings: () => setAccountSettingsOpen(true),
+      onOpenSystemManagement: () => setSystemManagementOpen(true),
       onRenameTag: (from, to) => renameTag({ from, to }),
       // Tag filters live on the timeline; from any other workspace page a tag
       // click jumps there with the filter applied instead of doing nothing.
@@ -229,6 +231,13 @@ export function WorkspaceLayout({
           <AccountSettingsDialog
             open={accountSettingsOpen}
             onClose={() => setAccountSettingsOpen(false)}
+          />
+        )}
+        {systemManagementOpen && (
+          <AccountSettingsDialog
+            mode="admin"
+            open={systemManagementOpen}
+            onClose={() => setSystemManagementOpen(false)}
           />
         )}
       </Suspense>

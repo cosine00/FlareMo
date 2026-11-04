@@ -83,6 +83,7 @@ type MemoListProps = {
   memos: Memo[];
   /** Card stack (default) or the dated archive-style list. */
   layout?: TimelineLayout;
+  imageMode?: "full" | "icon";
   attachmentsByMemo: Map<string, Attachment[]>;
   sharesByMemo: Map<string, Share>;
   searchQuery?: string;
@@ -114,6 +115,7 @@ type VirtualizedCardsProps = {
   editingMemoNames: Set<string>;
   focusedMemoId?: string | null;
   isUpdating: boolean;
+  imageMode: "full" | "icon";
   listRef: RefObject<HTMLDivElement | null>;
   memos: Memo[];
   onArchive: (id: string) => void;
@@ -157,6 +159,7 @@ function VirtualizedCards({
   editingMemoNames,
   focusedMemoId,
   isUpdating,
+  imageMode,
   listRef,
   memos,
   onArchive,
@@ -278,6 +281,7 @@ function VirtualizedCards({
               }
               canManage={memo.can_manage === true}
               canGovern={memo.can_govern === true}
+              imageMode={imageMode}
               index={item.index}
               isFocused={focusedMemoId === (memo.id || memo.name)}
               memo={memo}
@@ -332,6 +336,7 @@ export const MemoList = memo(function MemoList({
   hasNextPage,
   isFetchingNextPage,
   layout = "cards",
+  imageMode = "full",
   memos,
   attachmentsByMemo,
   sharesByMemo,
@@ -498,12 +503,8 @@ export const MemoList = memo(function MemoList({
   ) : null;
 
   // One card shape, three containers: the rail, the virtualized stack and the
-  // plain stack. `imageMode` is the only difference between them.
-  const renderCard = (
-    memo: Memo,
-    index: number,
-    imageMode: "full" | "icon" = "full",
-  ) => (
+  // plain stack. The viewer's image preference applies to every layout.
+  const renderCard = (memo: Memo, index: number) => (
     <MemoCard
       attachments={attachmentsByMemo.get(memo.name) ?? EMPTY_ATTACHMENTS}
       canManage={memo.can_manage === true}
@@ -555,7 +556,7 @@ export const MemoList = memo(function MemoList({
         >
           {memos.map((memo, index) => (
             <div className="memo-timeline-item" key={memo.name}>
-              {renderCard(memo, index, "icon")}
+              {renderCard(memo, index)}
             </div>
           ))}
         </div>
@@ -565,6 +566,7 @@ export const MemoList = memo(function MemoList({
           editingMemoNames={editingMemoNames}
           focusedMemoId={focusedMemoId}
           isUpdating={isUpdating}
+          imageMode={imageMode}
           listRef={listRef}
           memos={memos}
           onArchive={onArchive}
