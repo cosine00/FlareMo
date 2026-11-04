@@ -7,6 +7,7 @@ import { Markdown } from "@tiptap/markdown";
 import type { Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
+import { MarkdownShortcuts } from "@/components/markdown-shortcut-extension";
 import { RichComposerEditor } from "@/components/rich-composer-editor";
 import { UploadPlaceholder } from "@/components/upload-placeholder-extension";
 import { extractImageFiles } from "@/lib/image-insert";
@@ -34,6 +35,7 @@ export function buildArticleExtensions(placeholder: string) {
     Image.configure({ inline: true }),
     Placeholder.configure({ placeholder }),
     Markdown,
+    MarkdownShortcuts,
     UploadPlaceholder,
   ];
 }

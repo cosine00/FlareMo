@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { Editor } from "@tiptap/core";
 import { describe, expect, it } from "vitest";
+import {
+  insertPastedMarkdown,
+  looksLikeMarkdownLink,
+} from "@/lib/markdown-paste";
 import { buildComposerExtensions } from "./rich-composer-editor";
 
 /**
@@ -91,5 +95,115 @@ describe("composer markdown round-trip", () => {
     // Inline HTML stays literal text in storage; the card renderer never sees
     // a raw <u> element from the editor's own output.
     expect(once).not.toMatch(/<u>/i);
+  });
+
+  // The paste path: literal text would be escaped (`\[x\](url)`) while the
+  // Link extension still autolinked the URL, saving a note that rendered as
+  // backslashes plus half a link. Parsing the paste as markdown keeps it whole.
+  it("stores a pasted markdown link as a real link", () => {
+    editor.commands.setContent("看 ", { contentType: "markdown" });
+    insertPastedMarkdown(
+      editor,
+      "[FlareMo](https://github.com/realchendahuang/FlareMo)",
+    );
+    expect(editor.getMarkdown()).toBe(
+      "看 [FlareMo](https://github.com/realchendahuang/FlareMo)",
+    );
+  });
+
+  it("stores a pasted markdown image as a real image", () => {
+    editor.commands.setContent("看图：", { contentType: "markdown" });
+    insertPastedMarkdown(editor, "![图](https://img.hux.ink/a.png)");
+    expect(editor.getMarkdown()).toBe("看图：![图](https://img.hux.ink/a.png)");
+  });
+
+  it("keeps the link whole when the paste carries prose around it", () => {
+    editor.commands.setContent("", { contentType: "markdown" });
+    insertPastedMarkdown(
+      editor,
+      "把 memos 迁移到 [FlareMo](https://github.com/realchendahuang/FlareMo) 上",
+    );
+    expect(editor.getMarkdown()).toBe(
+      "把 memos 迁移到 [FlareMo](https://github.com/realchendahuang/FlareMo) 上",
+    );
+  });
+
+  it("recognises only pastes that carry markdown link syntax", () => {
+    expect(looksLikeMarkdownLink("[FlareMo](https://github.com/x/y)")).toBe(
+      true,
+    );
+    expect(
+      looksLikeMarkdownLink("看这个 ![图](https://img.hux.ink/a.png) 好看"),
+    ).toBe(true);
+    expect(looksLikeMarkdownLink("站内 [周报](/memo/abc)")).toBe(true);
+    expect(looksLikeMarkdownLink("裸链接 https://github.com/x/y")).toBe(false);
+    expect(looksLikeMarkdownLink("普通的 [方括号] 文字")).toBe(false);
+    expect(looksLikeMarkdownLink("已经转义过的 \\[x\\](https://x/y)")).toBe(
+      false,
+    );
+  });
+});
+
+/**
+ * Hand-typed syntax: the same trap as the paste path, one keystroke at a
+ * time. ProseMirror inserts the characters literally, so the shortcut has to
+ * fire on the closing paren and hand back a real link.
+ */
+describe("typed markdown link syntax", () => {
+  const editor = new Editor({
+    extensions: buildComposerExtensions(""),
+    content: "",
+    contentType: "markdown",
+    element: document.createElement("div"),
+  });
+
+  /** Feeds one character at a time through the input-rule pipeline. */
+  const type = (text: string) => {
+    const { view } = editor;
+    for (const char of text) {
+      const { from, to } = view.state.selection;
+      // The default transaction the view would apply if nothing handled it.
+      const insert = () => view.state.tr.insertText(char, from, to);
+      const handled = view.someProp("handleTextInput", (handler) =>
+        handler(view, from, to, char, insert),
+      );
+      if (!handled) view.dispatch(insert());
+    }
+  };
+
+  const types = (before: string, text: string) => {
+    editor.commands.setContent(before, { contentType: "markdown" });
+    type(text);
+    return editor.getMarkdown();
+  };
+
+  it("turns a typed link into a real link", () => {
+    expect(types("", "[FlareMo](https://github.com/x/y)")).toBe(
+      "[FlareMo](https://github.com/x/y)",
+    );
+  });
+
+  it("keeps the link when it is typed inside a sentence", () => {
+    expect(
+      types("把 memos 迁移到 ", "[FlareMo](https://github.com/x/y) 上"),
+    ).toBe("把 memos 迁移到 [FlareMo](https://github.com/x/y) 上");
+  });
+
+  it("turns a typed image into a real image", () => {
+    expect(types("看图：", "![图](https://img.hux.ink/a.png)")).toBe(
+      "看图：![图](https://img.hux.ink/a.png)",
+    );
+  });
+
+  it("does not extend the link over the words typed after it", () => {
+    expect(types("", "[周报](/memo/abc) 已归档")).toBe(
+      "[周报](/memo/abc) 已归档",
+    );
+  });
+
+  it("leaves an explicitly escaped bracket alone", () => {
+    types("", "\\[x\\](https://x/y)");
+    expect(editor.state.doc.textContent).toBe("\\[x\\](https://x/y)");
+    expect(JSON.stringify(editor.getJSON())).not.toContain('"link"');
   });
 });

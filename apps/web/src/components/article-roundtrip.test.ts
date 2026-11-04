@@ -41,4 +41,12 @@ describe("article markdown round-trip", () => {
     expect(round("```python\nprint(1)\n```")).toContain("```python");
     expect(round("#### D")).toContain("#### D");
   });
+
+  // Articles build their own extension list, so a shortcut added to the
+  // composer does not reach them by itself. Typed `[x](url)` is the case that
+  // matters: without the rule it saves as escaped text.
+  it("carries the typed-link shortcut", () => {
+    const names = buildArticleExtensions("").map((extension) => extension.name);
+    expect(names).toContain("markdownShortcuts");
+  });
 });

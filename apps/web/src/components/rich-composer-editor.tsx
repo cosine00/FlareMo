@@ -7,10 +7,15 @@ import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef } from "react";
 import { FormatBubbleMenu } from "@/components/composer/format-bubble-menu";
+import { MarkdownShortcuts } from "@/components/markdown-shortcut-extension";
 import { TagHighlight } from "@/components/tag-highlight-extension";
 import { UploadPlaceholder } from "@/components/upload-placeholder-extension";
 import { focusEditorOnNextFrame } from "@/lib/editor-autofocus";
 import { extractImageFiles } from "@/lib/image-insert";
+import {
+  insertPastedMarkdown,
+  looksLikeMarkdownLink,
+} from "@/lib/markdown-paste";
 import { extractActiveTagToken } from "@/lib/tag-autocomplete";
 import { extractActiveWikiLinkToken } from "@/lib/wikilink-autocomplete";
 
@@ -34,6 +39,7 @@ export function buildComposerExtensions(placeholder: string) {
     Image.configure({ inline: true }),
     Placeholder.configure({ placeholder }),
     Markdown,
+    MarkdownShortcuts,
     TagHighlight,
     UploadPlaceholder,
   ];
@@ -213,11 +219,26 @@ export function RichComposerEditor({
         return false;
       },
       handlePaste: (view, event) => {
-        const files = extractImageFiles(event.clipboardData?.files ?? []);
-        if (files.length === 0) return false;
-        event.preventDefault();
-        onImageFilesRef.current(files, view.state.selection.to);
-        return true;
+        const clipboard = event.clipboardData;
+        const files = extractImageFiles(clipboard?.files ?? []);
+        if (files.length > 0) {
+          event.preventDefault();
+          onImageFilesRef.current(files, view.state.selection.to);
+          return true;
+        }
+        // A plain-text paste of `[text](url)` would be typed as literal
+        // characters: the serializer escapes the brackets and the Link
+        // extension still autolinks the URL, leaving a note with backslashes
+        // and half a link. Parse it as markdown so the link survives.
+        const html = clipboard?.getData("text/html") ?? "";
+        const text = clipboard?.getData("text/plain") ?? "";
+        if (!html.trim() && looksLikeMarkdownLink(text)) {
+          event.preventDefault();
+          if (!editorRef.current) return false;
+          insertPastedMarkdown(editorRef.current, text);
+          return true;
+        }
+        return false;
       },
       handleDrop: (view, event, _slice, moved) => {
         if (moved) return false;
