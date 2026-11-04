@@ -124,17 +124,20 @@ export function WorkspaceHeader({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Layout picker: a segmented control rather than a cycling button,
-              so the current arrangement is visible instead of remembered. */}
+              so the current arrangement is visible instead of remembered.
+              Phones get the same control, one size up: the header has the
+              room once the spotlight pill is gone, and a 28px target is too
+              small for a thumb. */}
           <fieldset
             aria-label={t("timeline.layout")}
-            className="hidden h-8.5 min-w-0 items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 shadow-2xs md:flex"
+            className="flex h-9 min-w-0 items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 shadow-2xs md:h-8.5"
           >
             {LAYOUT_OPTIONS.map(({ label, value, icon: Icon }) => (
               <Button
                 aria-label={t(label)}
                 aria-pressed={layout === value}
                 className={cn(
-                  "size-7 rounded-md p-0 text-muted-foreground",
+                  "size-8 rounded-md p-0 text-muted-foreground md:size-7",
                   layout === value &&
                     "bg-background text-primary shadow-xs hover:bg-background hover:text-primary",
                 )}
@@ -156,7 +159,7 @@ export function WorkspaceHeader({
                 : "timeline.showImages",
             )}
             aria-pressed={imageMode === "full"}
-            className="hidden size-8.5 rounded-lg border border-border/60 bg-muted/40 text-muted-foreground shadow-2xs md:inline-flex"
+            className="inline-flex size-9 rounded-lg border border-border/60 bg-muted/40 text-muted-foreground shadow-2xs md:size-8.5"
             size="icon-sm"
             title={t(
               imageMode === "full"

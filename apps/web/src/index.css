@@ -943,6 +943,16 @@ svg.lucide[stroke-width="2"] {
     @apply min-h-32 max-h-80 overflow-y-auto px-4 pt-4 pb-2 text-[15px] leading-7 outline-none motion-safe:transition-[min-height,max-height,padding] motion-safe:duration-200 motion-safe:ease-signal;
   }
 
+  /* Phones: the on-screen keyboard takes half the viewport, so the focused
+     box opens one line taller than on desktop — enough to keep a sentence
+     and its context visible above the keys. The idle one-line rule below
+     outranks this, so the flomo-style collapse still holds. */
+  @media (max-width: 767px) {
+    .composer-editor-content {
+      min-height: 10rem;
+    }
+  }
+
   /* Article editor body: same typography as the reading surface, but
      unclipped — a long article grows the page instead of scrolling inside
      a fixed box. */
