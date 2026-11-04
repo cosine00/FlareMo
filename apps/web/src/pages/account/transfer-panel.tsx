@@ -1,11 +1,20 @@
 import type { DataTaskDto } from "@flaremo/contracts";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { DownloadIcon, Loader2Icon, RefreshCcwIcon } from "lucide-react";
+import {
+  DownloadIcon,
+  Loader2Icon,
+  RefreshCcwIcon,
+  UploadIcon,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { downloadExportJson } from "@/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { TranslationKey } from "@/i18n";
+import { useDataTransfer } from "@/hooks/use-data-transfer";
+import { useMemoMutations } from "@/hooks/use-memo-mutations";
+import { type TranslationKey, useI18n } from "@/i18n";
 import { SettingsSectionGroup } from "./apple-settings-ui";
 
 type TransferPanelProps = {
@@ -17,6 +26,100 @@ type TransferPanelProps = {
   onRetryExport: () => void;
 };
 
+/**
+ * File in / file out. These were two icon buttons pinned to the bottom of the
+ * sidebar — a navigation rail is the wrong place for an action that replaces
+ * the whole workspace, and the export can take a while with no room for a
+ * label. In settings they sit next to the task list that records them.
+ */
+function BackupSection() {
+  const { t } = useI18n();
+  const { handleMutationError, invalidateWorkspace } = useMemoMutations();
+  const { handleExport, handleImportFile } = useDataTransfer({
+    handleMutationError,
+    invalidateWorkspace,
+  });
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState<"export" | "import" | null>(null);
+
+  const runExport = async () => {
+    setBusy("export");
+    try {
+      await handleExport();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runImport = async (file: File) => {
+    setBusy("import");
+    try {
+      const text = await file.text();
+      await handleImportFile(JSON.parse(text) as unknown);
+    } catch {
+      toast.error(t("toast.invalidImport"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <SettingsSectionGroup
+      footer={t("transfer.backupDescription")}
+      title={t("transfer.backup")}
+    >
+      <div className="flex flex-wrap items-center gap-2 p-3">
+        <Button
+          className="h-8 text-xs"
+          disabled={busy !== null}
+          onClick={() => void runExport()}
+          size="sm"
+          variant="outline"
+        >
+          {busy === "export" ? (
+            <Loader2Icon
+              className="size-3.5 animate-spin"
+              data-icon="inline-start"
+            />
+          ) : (
+            <DownloadIcon className="size-3.5" data-icon="inline-start" />
+          )}
+          {t("common.export")}
+        </Button>
+        <Button
+          className="h-8 text-xs"
+          disabled={busy !== null}
+          onClick={() => inputRef.current?.click()}
+          size="sm"
+          variant="outline"
+        >
+          {busy === "import" ? (
+            <Loader2Icon
+              className="size-3.5 animate-spin"
+              data-icon="inline-start"
+            />
+          ) : (
+            <UploadIcon className="size-3.5" data-icon="inline-start" />
+          )}
+          {t("common.import")}
+        </Button>
+        <input
+          accept="application/json"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // Reset first: picking the same file twice must fire again.
+            event.target.value = "";
+            if (file) void runImport(file);
+          }}
+          ref={inputRef}
+          type="file"
+        />
+      </div>
+    </SettingsSectionGroup>
+  );
+}
+
 export function TransferPanel({
   createExportIsPending,
   dataTasksQuery,
@@ -27,6 +130,7 @@ export function TransferPanel({
 }: TransferPanelProps) {
   return (
     <div className="flex flex-col gap-5">
+      <BackupSection />
       <SettingsSectionGroup
         title={
           <div className="flex items-center justify-between">

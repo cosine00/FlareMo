@@ -623,6 +623,9 @@ const messages = {
   "auth.accountTitle": "Account and access",
   "auth.tab.account": "Account",
   "transfer.title": "Data export",
+  "transfer.backup": "Backup and restore",
+  "transfer.backupDescription":
+    "Export every note as one JSON file, or import a backup you made earlier.",
   "transfer.newExport": "New export",
   "transfer.loadFailed": "Could not load data transfer tasks.",
   "transfer.empty": "No data transfer tasks yet.",
@@ -1293,6 +1296,18 @@ const messages = {
   "theme.darkDescription": "Easy on the eyes in low light",
   "theme.previewDetails": "Shortcuts",
   "theme.shortcutTip": "Press D in non-input areas to quickly toggle theme",
+
+  "theme.palette": "Page theme",
+  "theme.paletteDescription":
+    "Change what the page is made of: paper, graphite, ink and more. Works at either brightness.",
+  "theme.language": "Language",
+  "theme.languageDescription": "Interface language",
+  "palette.paper": "Paper",
+  "palette.graphite": "Graphite",
+  "palette.sepia": "Sepia",
+  "palette.ink": "Ink",
+  "palette.nord": "Mist",
+  "palette.moss": "Moss",
   "admin.filterAll": "All",
   "admin.pageSizeLabel": "Per page",
   "admin.columnMember": "Member",

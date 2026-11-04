@@ -635,6 +635,9 @@ const messages = {
   "auth.accountTitle": "Compte et accès",
   "auth.tab.account": "Compte",
   "transfer.title": "Export de données",
+  "transfer.backup": "Sauvegarde et restauration",
+  "transfer.backupDescription":
+    "Exportez toutes vos notes dans un fichier JSON, ou restaurez une sauvegarde.",
   "transfer.newExport": "Nouvel export",
   "transfer.loadFailed":
     "Impossible de charger les tâches de transfert de données.",
@@ -1333,6 +1336,18 @@ const messages = {
   "theme.darkDescription": "Confortable pour les yeux dans l'obscurité",
   "theme.previewDetails": "Raccourcis",
   "theme.shortcutTip": "Appuyez sur D hors des zones de saisie pour basculer",
+
+  "theme.palette": "Thème de page",
+  "theme.paletteDescription":
+    "Changez la matière de la page : papier, graphite, encre… Compatible avec les deux luminosités.",
+  "theme.language": "Langue",
+  "theme.languageDescription": "Langue de l’interface",
+  "palette.paper": "Papier",
+  "palette.graphite": "Graphite",
+  "palette.sepia": "Sépia",
+  "palette.ink": "Encre",
+  "palette.nord": "Brume",
+  "palette.moss": "Mousse",
   "admin.filterAll": "Tous",
   "admin.pageSizeLabel": "Par page",
   "admin.columnMember": "Membre",

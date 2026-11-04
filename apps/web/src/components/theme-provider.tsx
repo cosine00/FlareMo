@@ -3,6 +3,25 @@ import * as React from "react";
 export type Theme = "dark" | "light" | "system";
 export type ResolvedTheme = "dark" | "light";
 
+/**
+ * Page palettes. Light/dark decides *how bright* the page is; the palette
+ * decides what the page is made of — warm paper, cold graphite, aged sepia,
+ * ink on white, misted blue, mossy green. Each palette is defined as token
+ * overrides in index.css and applies to both themes, so the two axes compose.
+ */
+export type Palette = "paper" | "graphite" | "sepia" | "ink" | "nord" | "moss";
+
+export const PALETTES: Palette[] = [
+  "paper",
+  "graphite",
+  "sepia",
+  "ink",
+  "nord",
+  "moss",
+];
+
+const PALETTE_STORAGE_KEY = "palette";
+
 type ThemeProviderProps = {
   children: React.ReactNode;
   defaultTheme?: Theme;
@@ -13,6 +32,10 @@ type ThemeProviderProps = {
 export type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  /** What `system` resolved to right now — drives palette previews. */
+  resolvedTheme: ResolvedTheme;
+  palette: Palette;
+  setPalette: (palette: Palette) => void;
 };
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
@@ -36,6 +59,14 @@ function isTheme(value: string | null): value is Theme {
   }
 
   return THEME_VALUES.includes(value as Theme);
+}
+
+function isPalette(value: string | null): value is Palette {
+  if (value === null) {
+    return false;
+  }
+
+  return PALETTES.includes(value as Palette);
 }
 
 function getSystemTheme(): ResolvedTheme {
@@ -165,6 +196,10 @@ function isEditableTarget(target: EventTarget | null) {
   return false;
 }
 
+function applyPalette(palette: Palette) {
+  document.documentElement.dataset.palette = palette;
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -181,6 +216,15 @@ export function ThemeProvider({
     return defaultTheme;
   });
 
+  const [palette, setPaletteState] = React.useState<Palette>(() => {
+    const storedPalette = localStorage.getItem(PALETTE_STORAGE_KEY);
+    return isPalette(storedPalette) ? storedPalette : "paper";
+  });
+
+  const [resolvedTheme, setResolvedTheme] = React.useState<ResolvedTheme>(() =>
+    theme === "system" ? "light" : theme,
+  );
+
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
       localStorage.setItem(storageKey, nextTheme);
@@ -188,6 +232,11 @@ export function ThemeProvider({
     },
     [storageKey],
   );
+
+  const setPalette = React.useCallback((nextPalette: Palette) => {
+    localStorage.setItem(PALETTE_STORAGE_KEY, nextPalette);
+    setPaletteState(nextPalette);
+  }, []);
 
   const applyTheme = React.useCallback(
     (nextTheme: Theme) => {
@@ -200,6 +249,7 @@ export function ThemeProvider({
 
       root.classList.remove("light", "dark");
       root.classList.add(resolvedTheme);
+      setResolvedTheme(resolvedTheme);
       applyFavicon(resolvedTheme);
       applyThemeColor(resolvedTheme);
 
@@ -209,6 +259,10 @@ export function ThemeProvider({
     },
     [disableTransitionOnChange],
   );
+
+  React.useEffect(() => {
+    applyPalette(palette);
+  }, [palette]);
 
   React.useEffect(() => {
     applyTheme(theme);
@@ -294,12 +348,36 @@ export function ThemeProvider({
     };
   }, [defaultTheme, storageKey]);
 
+  // The palette follows the same rule as the theme: another tab's choice is
+  // adopted live, and a cleared value falls back to the default paper.
+  React.useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage) {
+        return;
+      }
+      if (event.key !== PALETTE_STORAGE_KEY) {
+        return;
+      }
+
+      setPaletteState(isPalette(event.newValue) ? event.newValue : "paper");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
   const value = React.useMemo(
     () => ({
       theme,
       setTheme,
+      resolvedTheme,
+      palette,
+      setPalette,
     }),
-    [theme, setTheme],
+    [theme, setTheme, resolvedTheme, palette, setPalette],
   );
 
   return (

@@ -20,7 +20,6 @@ import {
   WorkspaceSidebar,
   type WorkspaceSidebarContent,
 } from "@/components/workspace/workspace-sidebar";
-import { useDataTransfer } from "@/hooks/use-data-transfer";
 import { useMemoMutations } from "@/hooks/use-memo-mutations";
 import { queryKeys } from "@/lib/query-keys";
 import { ACTIVITY_WINDOW_DAYS } from "@/lib/time-horizon";
@@ -128,17 +127,7 @@ export function WorkspaceLayout({
     staleTime: 30_000,
   });
 
-  const {
-    deleteTagMutation,
-    handleMutationError,
-    invalidateWorkspace,
-    renameTagMutation,
-  } = useMemoMutations();
-
-  const { handleExport, handleImportFile } = useDataTransfer({
-    handleMutationError,
-    invalidateWorkspace,
-  });
+  const { deleteTagMutation, renameTagMutation } = useMemoMutations();
 
   const stats: MemoStatsResponse = statsQuery.data ?? EMPTY_STATS;
 
@@ -154,8 +143,6 @@ export function WorkspaceLayout({
       untagged: false,
       user: currentUserQuery.data,
       onDeleteTag: (tag) => deleteTag(tag),
-      onExport: handleExport,
-      onImportFile: handleImportFile,
       onOpenSettings: () => setAccountSettingsOpen(true),
       onOpenSystemManagement: () => setSystemManagementOpen(true),
       onRenameTag: (from, to) => renameTag({ from, to }),
@@ -184,8 +171,6 @@ export function WorkspaceLayout({
     currentUserQuery.data,
     deleteTagMutation.mutate,
     renameTagMutation.mutate,
-    handleExport,
-    handleImportFile,
     navigate,
     toggleSidebarCollapsed,
   ]);

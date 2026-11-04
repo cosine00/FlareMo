@@ -21,7 +21,6 @@ import {
 } from "@/components/workspace/workspace-sidebar";
 import { WorkspaceComposer } from "@/components/workspace-composer";
 import { WorkspaceSearch } from "@/components/workspace-search";
-import { useDataTransfer } from "@/hooks/use-data-transfer";
 import { useMemoMutations } from "@/hooks/use-memo-mutations";
 import { useWorkspaceFilters } from "@/hooks/use-workspace-filters";
 import { useWorkspaceQueries } from "@/hooks/use-workspace-queries";
@@ -172,9 +171,7 @@ export function FlareMoApp() {
   } = useWorkspaceShortcuts();
   const {
     deleteTagMutation,
-    handleMutationError,
     hardDeleteMutation,
-    invalidateWorkspace,
     renameTagMutation,
     restoreMutation,
     revokeShareMutation,
@@ -183,11 +180,6 @@ export function FlareMoApp() {
     trashMutation,
     updateMutation,
   } = useMemoMutations();
-
-  const { handleExport, handleImportFile } = useDataTransfer({
-    handleMutationError,
-    invalidateWorkspace,
-  });
 
   const { mutate: updateMemo, mutateAsync: updateMemoAsync } = updateMutation;
   const { mutate: trashMemo } = trashMutation;
@@ -264,8 +256,6 @@ export function FlareMoApp() {
       untagged,
       user: currentUserQuery.data,
       onDeleteTag: (tag) => deleteTagMutation.mutate(tag),
-      onExport: handleExport,
-      onImportFile: handleImportFile,
       onOpenSettings: () => setAccountSettingsOpen(true),
       onOpenSystemManagement: () => setSystemManagementOpen(true),
       onRenameTag: (from, to) => renameTagMutation.mutate({ from, to }),
@@ -276,8 +266,6 @@ export function FlareMoApp() {
     [
       activeTag,
       deleteTagMutation,
-      handleExport,
-      handleImportFile,
       renameTagMutation,
       setActiveTag,
       setUntagged,

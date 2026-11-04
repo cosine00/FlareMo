@@ -619,6 +619,9 @@ const messages = {
   "auth.accountTitle": "アカウントとアクセス",
   "auth.tab.account": "アカウント",
   "transfer.title": "データエクスポート",
+  "transfer.backup": "バックアップと復元",
+  "transfer.backupDescription":
+    "すべてのメモを JSON として書き出すか、バックアップから読み込みます。",
   "transfer.newExport": "新規エクスポート",
   "transfer.loadFailed": "データ転送タスクを読み込めませんでした。",
   "transfer.empty": "データ転送タスクはまだありません。",
@@ -1300,6 +1303,18 @@ const messages = {
   "theme.darkDescription": "暗所でも目に優しいスタイル",
   "theme.previewDetails": "ショートカット",
   "theme.shortcutTip": "非入力エリアで D キーを押すと明暗モードを切り替えます",
+
+  "theme.palette": "ページテーマ",
+  "theme.paletteDescription":
+    "紙の質感を切り替えます。明るい/暗いどちらのモードでも使えます。",
+  "theme.language": "表示言語",
+  "theme.languageDescription": "変更はすぐに反映されます",
+  "palette.paper": "ペーパー",
+  "palette.graphite": "グラファイト",
+  "palette.sepia": "セピア",
+  "palette.ink": "インク",
+  "palette.nord": "ミスト",
+  "palette.moss": "モス",
   "admin.filterAll": "すべて",
   "admin.pageSizeLabel": "表示件数",
   "admin.columnMember": "メンバー",

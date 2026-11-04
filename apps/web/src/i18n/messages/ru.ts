@@ -624,6 +624,9 @@ const messages = {
   "auth.accountTitle": "Аккаунт и доступ",
   "auth.tab.account": "Аккаунт",
   "transfer.title": "Экспорт данных",
+  "transfer.backup": "Резервная копия и восстановление",
+  "transfer.backupDescription":
+    "Выгрузите все заметки в файл JSON или восстановите из копии.",
   "transfer.newExport": "Новый экспорт",
   "transfer.loadFailed": "Не удалось загрузить задачи передачи данных.",
   "transfer.empty": "Задач передачи данных пока нет.",
@@ -1308,6 +1311,17 @@ const messages = {
   "theme.dark": "Тёмная",
   "theme.darkDescription": "Комфортно для глаз при слабом освещении",
   "theme.previewDetails": "Горячие клавиши",
+  "theme.palette": "Тема страницы",
+  "theme.paletteDescription":
+    "Смените материал страницы: бумага, графит, тушь… Работает в обоих режимах яркости.",
+  "theme.language": "Язык",
+  "theme.languageDescription": "Язык интерфейса",
+  "palette.paper": "Бумага",
+  "palette.graphite": "Графит",
+  "palette.sepia": "Сепия",
+  "palette.ink": "Тушь",
+  "palette.nord": "Дымка",
+  "palette.moss": "Мох",
   "theme.shortcutTip":
     "Нажмите D вне полей ввода, чтобы быстро переключить тему",
   "admin.filterAll": "Все",

@@ -571,6 +571,9 @@ const messages = {
   "auth.accountTitle": "账户与访问",
   "auth.tab.account": "账户",
   "transfer.title": "数据导出",
+  "transfer.backup": "备份与还原",
+  "transfer.backupDescription":
+    "导出全部笔记为一个 JSON 文件，或从备份文件导入。",
   "transfer.newExport": "新建导出",
   "transfer.loadFailed": "无法加载数据传输任务。",
   "transfer.empty": "还没有数据传输任务。",
@@ -1212,6 +1215,18 @@ const messages = {
   "theme.darkDescription": "适合暗光环境，更低刺激更护眼",
   "theme.previewDetails": "快捷键",
   "theme.shortcutTip": "在任何非输入区域按 D 键可快速切换明暗模式",
+
+  "theme.palette": "页面主题",
+  "theme.paletteDescription":
+    "换一种纸张质感：素纸、石墨、旧书、墨线、雾蓝、苔原，明暗两种模式都可用。",
+  "theme.language": "界面语言",
+  "theme.languageDescription": "切换后立即生效",
+  "palette.paper": "素纸",
+  "palette.graphite": "石墨",
+  "palette.sepia": "旧书",
+  "palette.ink": "墨线",
+  "palette.nord": "雾蓝",
+  "palette.moss": "苔原",
   "admin.filterAll": "全部",
   "admin.pageSizeLabel": "每页显示",
   "admin.columnMember": "成员",

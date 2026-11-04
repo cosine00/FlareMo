@@ -617,6 +617,9 @@ const messages = {
   "auth.accountTitle": "계정과 접근",
   "auth.tab.account": "계정",
   "transfer.title": "데이터 내보내기",
+  "transfer.backup": "백업 및 복원",
+  "transfer.backupDescription":
+    "모든 메모를 JSON으로 내보내거나 백업 파일에서 가져옵니다.",
   "transfer.newExport": "새 내보내기",
   "transfer.loadFailed": "데이터 전송 작업을 불러올 수 없습니다.",
   "transfer.empty": "데이터 전송 작업이 아직 없습니다.",
@@ -1288,6 +1291,17 @@ const messages = {
   "theme.dark": "다크",
   "theme.darkDescription": "어두운 환경에서 눈이 편안한 스타일",
   "theme.previewDetails": "단축키",
+  "theme.palette": "페이지 테마",
+  "theme.paletteDescription":
+    "종이 질감을 바꿉니다. 밝은/어두운 모드에서 모두 사용할 수 있습니다.",
+  "theme.language": "표시 언어",
+  "theme.languageDescription": "변경 사항은 즉시 적용됩니다",
+  "palette.paper": "페이퍼",
+  "palette.graphite": "그래파이트",
+  "palette.sepia": "세피아",
+  "palette.ink": "잉크",
+  "palette.nord": "미스트",
+  "palette.moss": "모스",
   "theme.shortcutTip":
     "입력창이 아닌 곳에서 D 키를 눌러 테마를 전환할 수 있습니다",
   "admin.filterAll": "전체",

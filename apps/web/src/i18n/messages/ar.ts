@@ -610,6 +610,9 @@ const messages = {
   "auth.accountTitle": "الحساب والوصول",
   "auth.tab.account": "الحساب",
   "transfer.title": "تصدير البيانات",
+  "transfer.backup": "النسخ الاحتياطي والاستعادة",
+  "transfer.backupDescription":
+    "صدّر كل الملاحطات إلى ملف JSON أو استعد نسخة احتياطية.",
   "transfer.newExport": "تصدير جديد",
   "transfer.loadFailed": "تعذر تحميل مهام نقل البيانات.",
   "transfer.empty": "لا مهام نقل بيانات بعد.",
@@ -1266,6 +1269,18 @@ const messages = {
   "theme.darkDescription": "مريح للعينين في الإضاءة المنخفضة",
   "theme.previewDetails": "اختصارات",
   "theme.shortcutTip": "اضغط على D في غير حقول الإدخال للتبديل السريع",
+
+  "theme.palette": "سمة الصفحة",
+  "theme.paletteDescription":
+    "غيّر مادة الصفحة: ورق، غرافيت، حبر… تعمل مع الوضعين الفاتح والداكن.",
+  "theme.language": "لغة الواجهة",
+  "theme.languageDescription": "تُطبَّق فورًا",
+  "palette.paper": "ورق",
+  "palette.graphite": "غرافيت",
+  "palette.sepia": "سيبيا",
+  "palette.ink": "حبر",
+  "palette.nord": "ضباب",
+  "palette.moss": "طحلب",
   "admin.filterAll": "الكل",
   "admin.pageSizeLabel": "لكل صفحة",
   "admin.columnMember": "عضو",

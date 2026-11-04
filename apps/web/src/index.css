@@ -450,6 +450,203 @@
 }
 
 
+/* Page palettes (`data-palette` on <html>, written by ThemeProvider and by the
+   bootstrap script in index.html). A palette decides what the page is made of;
+   light/dark decides how bright it is, so the two axes compose freely.
+
+   Only "material" tokens are re-tinted — paper, surfaces, ink, hairlines,
+   corner radius, grain, shadow temperature. The brand ramp is never touched:
+   every accent preset keeps working on every palette, and component code
+   stays palette-agnostic. `paper` is the default and owns no block. */
+[data-palette='graphite'] {
+    --background: oklch(0.972 0.0025 250);
+    --foreground: oklch(0.225 0.008 255);
+    --card: oklch(0.995 0.0015 250);
+    --card-foreground: oklch(0.235 0.008 255);
+    --popover: oklch(0.998 0.001 250);
+    --popover-foreground: oklch(0.235 0.008 255);
+    --secondary: oklch(0.945 0.004 250);
+    --secondary-foreground: oklch(0.27 0.008 255);
+    --muted: oklch(0.94 0.004 250);
+    --muted-foreground: oklch(0.5 0.012 250);
+    --border: oklch(0.9 0.006 250);
+    --input: oklch(0.875 0.008 250);
+    --radius: 0.5rem;
+    --paper-grain: none;
+    --paper-edge: inset 0 1px 0 oklch(1 0 0 / 0.85);
+    --shadow-xs: 0 1px 2px oklch(0.28 0.01 250 / 0.05);
+    --shadow-sm:
+        0 1px 2px oklch(0.28 0.01 250 / 0.06),
+        0 2px 6px -2px oklch(0.28 0.01 250 / 0.08);
+    --shadow-md:
+        0 1px 2px oklch(0.28 0.01 250 / 0.05),
+        0 6px 16px -6px oklch(0.28 0.01 250 / 0.1);
+    --shadow-lg:
+        0 1px 3px oklch(0.28 0.01 250 / 0.06),
+        0 16px 40px -12px oklch(0.28 0.01 250 / 0.16);
+}
+
+.dark[data-palette='graphite'] {
+    --background: oklch(0.168 0.006 255);
+    --foreground: oklch(0.94 0.006 250);
+    --card: oklch(0.212 0.007 255);
+    --card-foreground: oklch(0.95 0.005 250);
+    --popover: oklch(0.238 0.008 255);
+    --popover-foreground: oklch(0.95 0.005 250);
+    --secondary: oklch(0.265 0.007 255);
+    --secondary-foreground: oklch(0.95 0.005 250);
+    --muted: oklch(0.255 0.007 255);
+    --muted-foreground: oklch(0.7 0.01 250);
+    --border: oklch(1 0 0 / 9%);
+    --input: oklch(1 0 0 / 13%);
+    --paper-grain: none;
+    --glass-tint: oklch(0.22 0.006 255 / 0.7);
+}
+
+[data-palette='sepia'] {
+    --background: oklch(0.955 0.019 82);
+    --foreground: oklch(0.27 0.022 62);
+    --card: oklch(0.978 0.014 84);
+    --card-foreground: oklch(0.27 0.02 62);
+    --popover: oklch(0.982 0.013 84);
+    --popover-foreground: oklch(0.27 0.02 62);
+    --secondary: oklch(0.925 0.019 82);
+    --secondary-foreground: oklch(0.3 0.02 62);
+    --muted: oklch(0.92 0.018 82);
+    --muted-foreground: oklch(0.47 0.022 66);
+    --border: oklch(0.878 0.024 80);
+    --input: oklch(0.845 0.026 80);
+    --radius: 0.75rem;
+    --paper-edge: inset 0 1px 0 oklch(1 0 0 / 0.55);
+}
+
+.dark[data-palette='sepia'] {
+    --background: oklch(0.178 0.014 62);
+    --foreground: oklch(0.925 0.016 78);
+    --card: oklch(0.223 0.015 62);
+    --card-foreground: oklch(0.93 0.014 78);
+    --popover: oklch(0.25 0.016 62);
+    --popover-foreground: oklch(0.93 0.014 78);
+    --secondary: oklch(0.275 0.014 62);
+    --secondary-foreground: oklch(0.93 0.014 78);
+    --muted: oklch(0.265 0.013 62);
+    --muted-foreground: oklch(0.71 0.018 70);
+    --border: oklch(1 0 0 / 8%);
+    --input: oklch(1 0 0 / 12%);
+}
+
+/* Ink: full-contrast monochrome, square corners, no grain, no elevation. The
+   absence of shadows is the point — hierarchy comes from hairlines only. */
+[data-palette='ink'] {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.16 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.16 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.16 0 0);
+    --secondary: oklch(0.955 0 0);
+    --secondary-foreground: oklch(0.2 0 0);
+    --muted: oklch(0.955 0 0);
+    --muted-foreground: oklch(0.44 0 0);
+    --border: oklch(0.855 0 0);
+    --input: oklch(0.8 0 0);
+    --radius: 0.25rem;
+    --paper-grain: none;
+    --paper-edge: inset 0 0 0 transparent;
+    --shadow-xs: 0 0 0 transparent;
+    --shadow-sm: 0 0 0 transparent;
+    --shadow-md: 0 0 0 transparent;
+    --shadow-lg: 0 0 0 transparent;
+}
+
+.dark[data-palette='ink'] {
+    --background: oklch(0.115 0 0);
+    --foreground: oklch(0.975 0 0);
+    --card: oklch(0.155 0 0);
+    --card-foreground: oklch(0.975 0 0);
+    --popover: oklch(0.185 0 0);
+    --popover-foreground: oklch(0.975 0 0);
+    --secondary: oklch(0.22 0 0);
+    --secondary-foreground: oklch(0.97 0 0);
+    --muted: oklch(0.215 0 0);
+    --muted-foreground: oklch(0.74 0 0);
+    --border: oklch(1 0 0 / 15%);
+    --input: oklch(1 0 0 / 20%);
+    --paper-grain: none;
+    --glass-tint: oklch(0.16 0 0 / 0.72);
+}
+
+/* Mist: cool blue-grey with a looser, rounder measure. */
+[data-palette='nord'] {
+    --background: oklch(0.968 0.009 235);
+    --foreground: oklch(0.255 0.022 250);
+    --card: oklch(0.99 0.005 235);
+    --card-foreground: oklch(0.26 0.02 250);
+    --popover: oklch(0.993 0.004 235);
+    --popover-foreground: oklch(0.26 0.02 250);
+    --secondary: oklch(0.938 0.012 235);
+    --secondary-foreground: oklch(0.3 0.022 250);
+    --muted: oklch(0.932 0.012 235);
+    --muted-foreground: oklch(0.5 0.024 245);
+    --border: oklch(0.895 0.014 235);
+    --input: oklch(0.865 0.016 235);
+    --radius: 0.875rem;
+    --paper-grain: none;
+}
+
+.dark[data-palette='nord'] {
+    --background: oklch(0.195 0.021 252);
+    --foreground: oklch(0.93 0.012 240);
+    --card: oklch(0.238 0.022 252);
+    --card-foreground: oklch(0.93 0.012 240);
+    --popover: oklch(0.265 0.023 252);
+    --popover-foreground: oklch(0.93 0.012 240);
+    --secondary: oklch(0.285 0.021 252);
+    --secondary-foreground: oklch(0.93 0.012 240);
+    --muted: oklch(0.275 0.02 252);
+    --muted-foreground: oklch(0.735 0.02 240);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 14%);
+    --paper-grain: none;
+    --glass-tint: oklch(0.235 0.02 252 / 0.7);
+}
+
+/* Moss: an earthy green cast, the quietest of the set. */
+[data-palette='moss'] {
+    --background: oklch(0.962 0.012 128);
+    --foreground: oklch(0.245 0.016 150);
+    --card: oklch(0.985 0.008 128);
+    --card-foreground: oklch(0.25 0.015 150);
+    --popover: oklch(0.99 0.007 128);
+    --popover-foreground: oklch(0.25 0.015 150);
+    --secondary: oklch(0.93 0.014 128);
+    --secondary-foreground: oklch(0.29 0.016 150);
+    --muted: oklch(0.925 0.014 128);
+    --muted-foreground: oklch(0.48 0.018 145);
+    --border: oklch(0.888 0.018 128);
+    --input: oklch(0.858 0.02 128);
+    --radius: 0.625rem;
+    --paper-grain: none;
+}
+
+.dark[data-palette='moss'] {
+    --background: oklch(0.185 0.012 150);
+    --foreground: oklch(0.935 0.012 130);
+    --card: oklch(0.228 0.013 150);
+    --card-foreground: oklch(0.935 0.012 130);
+    --popover: oklch(0.255 0.014 150);
+    --popover-foreground: oklch(0.935 0.012 130);
+    --secondary: oklch(0.275 0.013 150);
+    --secondary-foreground: oklch(0.935 0.012 130);
+    --muted: oklch(0.265 0.012 150);
+    --muted-foreground: oklch(0.72 0.016 135);
+    --border: oklch(1 0 0 / 9%);
+    --input: oklch(1 0 0 / 13%);
+    --paper-grain: none;
+    --glass-tint: oklch(0.225 0.013 150 / 0.7);
+}
+
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

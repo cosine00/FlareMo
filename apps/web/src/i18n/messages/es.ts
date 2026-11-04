@@ -630,6 +630,9 @@ const messages = {
   "auth.accountTitle": "Cuenta y acceso",
   "auth.tab.account": "Cuenta",
   "transfer.title": "Exportación de datos",
+  "transfer.backup": "Copia y restauración",
+  "transfer.backupDescription":
+    "Exporta todas tus notas a un archivo JSON o restaura una copia de seguridad.",
   "transfer.newExport": "Nueva exportación",
   "transfer.loadFailed":
     "No se pudieron cargar las tareas de transferencia de datos.",
@@ -1317,6 +1320,18 @@ const messages = {
   "theme.darkDescription": "Agradable para la vista con poca luz",
   "theme.previewDetails": "Atajos",
   "theme.shortcutTip": "Presiona D en áreas sin texto para alternar el tema",
+
+  "theme.palette": "Tema de página",
+  "theme.paletteDescription":
+    "Cambia la materia de la página: papel, grafito, tinta… Funciona con ambas luminosidades.",
+  "theme.language": "Idioma",
+  "theme.languageDescription": "Idioma de la interfaz",
+  "palette.paper": "Papel",
+  "palette.graphite": "Grafito",
+  "palette.sepia": "Sepia",
+  "palette.ink": "Tinta",
+  "palette.nord": "Bruma",
+  "palette.moss": "Musgo",
   "admin.filterAll": "Todos",
   "admin.pageSizeLabel": "Por página",
   "admin.columnMember": "Miembro",
