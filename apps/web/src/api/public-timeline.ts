@@ -29,6 +29,11 @@ export async function listPublicTimeline(
     pageSize: String(params.pageSize ?? 20),
   });
   if (params.pageToken) search.set("pageToken", params.pageToken);
+  // Explore is the one surface where other people's notes belong, and it has
+  // to mean "public" to a signed-in visitor too. Without the filter the read
+  // boundary widens to everything the viewer can see, so their own private
+  // drafts would appear in what looks like a public feed.
+  search.set("filter", 'visibility == "PUBLIC"');
 
   const response = await fetch(`/api/v1/memos?${search.toString()}`, {
     headers: { accept: "application/json" },

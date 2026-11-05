@@ -30,6 +30,7 @@ import {
 } from "./memos-query";
 import { normalizeMemoTags } from "./tags";
 import {
+  authorScope,
   memoReadScope,
   scopedReadScope,
   spaceScope,
@@ -80,6 +81,8 @@ export async function listMemosForViewer(
     ? memos.updatedAt
     : memos.createdAt;
   const filters = [memoReadScope(user)];
+  const authorFilter = authorScope(user, query.author);
+  if (authorFilter) filters.push(authorFilter);
   const spaceFilter = spaceScope(user, query.space);
   if (spaceFilter) filters.push(spaceFilter);
   if (celFilter?.sqlPredicate) filters.push(celFilter.sqlPredicate);

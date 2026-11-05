@@ -204,7 +204,9 @@ describe("semanticSearchMemos", () => {
     const hits = await semanticSearchMemos(
       db,
       member,
-      { provider, index },
+      // A team search has to say so: the default is the member's own journal,
+      // which is narrower than the team-visible rows this used to return.
+      { provider, index, space: "team" },
       "owner",
       10,
     );
@@ -214,5 +216,28 @@ describe("semanticSearchMemos", () => {
     // legacy deployments that have not adopted the partitioned layout.
     expect(index.namespaces).toEqual([]);
     expect(index.lastNamespace).toBeUndefined();
+  });
+
+  it("keeps a personal search to the viewer's own memos", async () => {
+    const member = await createTeamMember(db, "Member");
+    const teamMemo = await createMemo(db, user, {
+      content: "owner team",
+      visibility: "protected",
+      source: "web",
+    });
+    const index = new FakeVectorIndex();
+    index.matches = [{ id: `${teamMemo.id}#chunks/0`, score: 0.9 }];
+
+    const hits = await semanticSearchMemos(
+      db,
+      member,
+      { provider, index },
+      "owner",
+      10,
+    );
+
+    // The workspace search describes one journal, so a teammate's protected
+    // memo is not a hit even though the read boundary would allow it.
+    expect(hits).toEqual([]);
   });
 });

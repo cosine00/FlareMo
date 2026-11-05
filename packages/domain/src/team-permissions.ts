@@ -61,6 +61,29 @@ export function isInstanceOwner(user: UserRow | null): boolean {
 }
 
 /**
+ * Optional author narrowing layered on top of `memoReadScope`.
+ *
+ * `memoReadScope` answers "what may this viewer read", which includes other
+ * people's public rows — the right answer for the public timeline and for
+ * following a shared link. The workspace, however, is a personal journal: its
+ * timeline, search, related notes and AI insights are meant to describe one
+ * person's own writing, and mixing in a second account's public rows made the
+ * list disagree with the sidebar counters (which are own-corpus only).
+ *
+ * `me` therefore narrows to rows the viewer wrote; anything else (including
+ * `all`, and the absence of the parameter) leaves the boundary alone so
+ * Memos-compatible clients keep their existing semantics.
+ */
+export function authorScope(
+  user: TeamViewer | null,
+  author: "me" | "all" | undefined,
+): SQL | null {
+  if (author !== "me") return null;
+  if (user?.status !== "active") return sql`0 = 1`;
+  return eq(memos.userId, user.id);
+}
+
+/**
  * SQL authorization boundary for memo list and search queries.
  *
  * The viewer always sees their own rows in every state. Other rows are team

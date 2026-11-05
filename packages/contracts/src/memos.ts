@@ -93,6 +93,15 @@ export const listMemosQuerySchema = z.object({
   state: memoStatusSchema.optional(),
   visibility: memoVisibilitySchema.optional(),
   space: memoSpaceSchema.optional(),
+  /**
+   * Author filter on top of the read boundary. `me` narrows the result to rows
+   * the viewer wrote; `all` (or omitting it) leaves the boundary untouched.
+   *
+   * The app's workspace is a personal journal, so its lists ask for `me`; the
+   * public timeline behind `/explore` deliberately does not, which is what
+   * keeps other people's public notes reachable from exactly one place.
+   */
+  author: z.enum(["me", "all"]).optional(),
   q: z
     .string()
     .optional()

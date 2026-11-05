@@ -99,6 +99,11 @@ export type ListMemoParams = {
   page_size?: number;
   page_token?: string;
   space?: MemoSpace;
+  /**
+   * `me` limits the list to the viewer's own memos (the workspace default);
+   * `all` keeps whatever the read boundary allows.
+   */
+  author?: "me" | "all";
 };
 
 export type AppInfo = {

@@ -64,10 +64,11 @@ export function registerMemosRoutes(app: Hono<HonoBindings>) {
   app.get("/memos", zValidator("query", listMemosQuerySchema), async (c) => {
     try {
       const { db, user, memoFilterScanLimit } = await getRequestContext(c);
-      // `space` is a FlareMo app-API concept; the Memos-compatible surface stays
-      // unchanged, so a client that cannot know about it never sends it and the
-      // shared schema does not widen this endpoint's behavior.
-      const { space: _space, ...query } = c.req.valid("query");
+      // `space` and `author` are FlareMo app-API concepts; the
+      // Memos-compatible surface stays unchanged, so a client that cannot know
+      // about them never sends them and the shared schema does not widen this
+      // endpoint's behavior.
+      const { space: _space, author: _author, ...query } = c.req.valid("query");
       const result = await listMemos(db, user, query, {
         celScanLimit: memoFilterScanLimit,
       });

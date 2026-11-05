@@ -1,9 +1,9 @@
 import type { FlareMoDb, MemoRow, UserRow } from "@flaremo/db";
 import { memos } from "@flaremo/db";
-import { and, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import type { EmbeddingProvider, VectorIndex } from "./embedding";
-import { memoReadScope } from "./team-permissions";
+import { scopedReadScope } from "./team-permissions";
 
 export type SemanticSearchDeps = {
   provider: EmbeddingProvider;
@@ -14,7 +14,30 @@ export type SemanticSearchDeps = {
    * the team namespace). Omitted namespaces are simply not queried.
    */
   namespaces?: string[];
+  /**
+   * Which partition the hits belong to. A personal (or unspecified) search is
+   * narrowed to the viewer's own rows; the team partition keeps team-wide
+   * visibility. See `semanticSearchScope`.
+   */
+  space?: "personal" | "team";
 };
+
+/**
+ * The D1 boundary for semantic hits.
+ *
+ * Deliberately narrower than `memoReadScope`, which also admits other people's
+ * public rows: the workspace search is a view of one person's journal, and
+ * letting a public row through made search disagree with the timeline and the
+ * sidebar counters.
+ */
+function semanticSearchScope(
+  user: UserRow,
+  space: "personal" | "team" | undefined,
+) {
+  return space === "team"
+    ? scopedReadScope(user, "team")
+    : eq(memos.userId, user.id);
+}
 
 export type SemanticMemoHit = {
   id: string;
@@ -82,7 +105,7 @@ export async function semanticSearchMemos(
       .from(memos)
       .where(
         and(
-          memoReadScope(user),
+          semanticSearchScope(user, deps.space),
           inArray(memos.id, idChunk),
           inArray(memos.status, ["normal", "archived"]),
         ),
@@ -109,16 +132,21 @@ export async function semanticSearchMemos(
 
 /**
  * Read back the candidate memos for a semantic search result set, preserving
- * the caller's hit order. The scope is identical to the vector pre-filter, so
- * this is the single D1 authorization boundary for rehydrating hits — routes
- * must not query the memos table directly for search results.
+ * the caller's hit order. The scope mirrors the vector pre-filter: a personal
+ * search rehydrates only the viewer's own rows, a team search the team
+ * partition. It is deliberately narrower than `memoReadScope` — that boundary
+ * also admits other people's public rows, which the workspace search must not
+ * surface — and it remains the single D1 authorization boundary for
+ * rehydrating hits, so routes must not query the memos table directly.
  */
 export async function getSemanticSearchMemos(
   db: FlareMoDb,
   user: UserRow,
   candidateIds: string[],
+  options: { space?: "personal" | "team" } = {},
 ): Promise<MemoRow[]> {
   if (candidateIds.length === 0) return [];
+  const scope = semanticSearchScope(user, options.space);
   const byId = new Map<string, MemoRow>();
   for (const idChunk of chunkForD1(candidateIds, d1IdsPerStatement(4))) {
     const rows = await db
@@ -126,7 +154,7 @@ export async function getSemanticSearchMemos(
       .from(memos)
       .where(
         and(
-          memoReadScope(user),
+          scope,
           inArray(memos.id, idChunk),
           inArray(memos.status, ["normal", "archived"]),
         ),

@@ -15,12 +15,16 @@ let mf: Miniflare;
 let env: Env;
 let sessionCookie: string;
 
-const { fetchApp, createMemo, bootstrapAndSignIn } = createAppTestHarness(
-  () => ({
-    env,
-    sessionCookie,
-  }),
-);
+const {
+  fetchApp,
+  createMemo,
+  bootstrapAndSignIn,
+  createActivatedMember,
+  createMemoAs,
+} = createAppTestHarness(() => ({
+  env,
+  sessionCookie,
+}));
 
 describe("FlareMo app memos API", () => {
   beforeEach(async () => {
@@ -557,5 +561,88 @@ describe("FlareMo app memos API", () => {
     expect(
       await fetchApp(`http://flaremo.test/api/public/shares/${share.token}`),
     ).toMatchObject({ status: 404 });
+  });
+
+  it("keeps another member's public memos out of the workspace list", async () => {
+    const other = await createActivatedMember(
+      "journal-other@example.com",
+      "Journal Other",
+    );
+    const otherId = await createMemoAs(
+      other.cookie,
+      "other-member-public-note",
+      "public",
+    );
+    const ownId = await createMemoAs(
+      sessionCookie,
+      "owner-public-note",
+      "public",
+    );
+
+    // The workspace asks for `author=me`: one journal per account.
+    const scoped = await json<{ memos: Array<{ id: string }> }>(
+      await fetchApp("http://flaremo.test/api/app/memos?author=me"),
+    );
+    expect(scoped.memos.map((memo) => memo.id)).toEqual([ownId]);
+
+    // Without the parameter the read boundary is untouched, which is what the
+    // public timeline and Memos-compatible clients rely on.
+    const unscoped = await json<{ memos: Array<{ id: string }> }>(
+      await fetchApp("http://flaremo.test/api/app/memos"),
+    );
+    expect(unscoped.memos.map((memo) => memo.id)).toEqual(
+      expect.arrayContaining([ownId, otherId]),
+    );
+
+    // The other member sees a mirror image of the same list. `authenticated:
+    // false` keeps the harness from stamping the owner's cookie over this one.
+    const otherScoped = await json<{ memos: Array<{ id: string }> }>(
+      await fetchApp(
+        "http://flaremo.test/api/app/memos?author=me",
+        { headers: { cookie: other.cookie } },
+        { authenticated: false },
+      ),
+    );
+    expect(otherScoped.memos.map((memo) => memo.id)).toEqual([otherId]);
+  });
+
+  it("paginates the author-scoped list without skipping the viewer's rows", async () => {
+    const other = await createActivatedMember(
+      "journal-page-other@example.com",
+      "Journal Page Other",
+    );
+    await createMemoAs(other.cookie, "interleaved other one", "public");
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    const firstOwn = await createMemoAs(
+      sessionCookie,
+      "interleaved own one",
+      "public",
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    await createMemoAs(other.cookie, "interleaved other two", "public");
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    const secondOwn = await createMemoAs(
+      sessionCookie,
+      "interleaved own two",
+      "public",
+    );
+
+    const page = await json<{
+      memos: Array<{ id: string }>;
+      next_page_token?: string;
+    }>(
+      await fetchApp(
+        "http://flaremo.test/api/app/memos?author=me&page_size=1&order_by=created_at asc",
+      ),
+    );
+    expect(page.memos.map((memo) => memo.id)).toEqual([firstOwn]);
+    expect(page.next_page_token).toBeTruthy();
+
+    const next = await json<{ memos: Array<{ id: string }> }>(
+      await fetchApp(
+        `http://flaremo.test/api/app/memos?author=me&page_size=1&order_by=created_at%20asc&page_token=${encodeURIComponent(page.next_page_token ?? "")}`,
+      ),
+    );
+    expect(next.memos.map((memo) => memo.id)).toEqual([secondOwn]);
   });
 });

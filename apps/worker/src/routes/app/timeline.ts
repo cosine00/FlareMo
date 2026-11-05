@@ -79,6 +79,7 @@ export function registerTimelineRoutes(app: Hono<HonoBindings>) {
             provider,
             index,
             namespaces: memoSearchNamespaces(c.env, user, query.space),
+            space: query.space,
           },
           query.q,
           query.limit,
@@ -106,6 +107,7 @@ export function registerTimelineRoutes(app: Hono<HonoBindings>) {
           db,
           user,
           hits.map((hit) => hit.id),
+          { space: query.space },
         );
         const creatorNames = await getFlaremoUserNames(
           db,

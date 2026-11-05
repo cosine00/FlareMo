@@ -37,6 +37,16 @@ export async function listMemos(
   if (params.include_deleted) query.set("include_deleted", "true");
   if (params.page_token) query.set("page_token", params.page_token);
   if (params.space && params.space !== "all") query.set("space", params.space);
+  // Every workspace list is a view of the viewer's own journal — the timeline,
+  // search, related notes and the AI insight pool all go through here. The
+  // server's read boundary also admits other members' public rows, which is
+  // right for the public timeline but wrong here: it put a second account's
+  // notes in the first account's timeline while the sidebar counters (own
+  // corpus only) said zero. The team space is the one deliberate exception.
+  query.set(
+    "author",
+    params.author ?? (params.space === "team" ? "all" : "me"),
+  );
 
   return apiRequest<ListMemosResponse>(`/api/app/memos?${query.toString()}`, {
     signal,
