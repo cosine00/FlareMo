@@ -21,6 +21,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="FlareMo" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- The timeline is image-heavy and every picture comes from the image bed,
+         so the TLS handshake is paid on the first card that scrolls into view.
+         Starting it while the bundle is still parsing takes that latency off
+         the critical path. No `crossorigin`: <img> fetches are no-cors, and the
+         attribute would open a second, unused connection. -->
+    <link rel="preconnect" href="https://img.hux.ink" />
+    <link rel="dns-prefetch" href="https://img.hux.ink" />
     <title>FlareMo</title>
     <script>
       try {
