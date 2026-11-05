@@ -52,6 +52,18 @@ export default defineConfig({
               test: /node_modules[\\/](react|react-dom|scheduler|use-sync-external-store)[\\/]/,
               priority: 10,
             },
+            // TipTap's floating menus pull `@floating-ui/dom` into their
+            // dependency closure, and Base UI (dropdown, tooltip, positioner)
+            // needs the same module eagerly. Without its own group the shared
+            // copy lands inside vendor-tiptap, so every one of those eager
+            // chunks imports the editor chunk back into the startup graph —
+            // which is exactly what made the timeline wait for 176KB of
+            // editor it never used.
+            {
+              name: "vendor-floating",
+              test: /node_modules[\\/]@floating-ui[\\/]/,
+              priority: 9,
+            },
             // TipTap + ProseMirror: only the lazy rich composer chunk needs
             // it; keeping it in its own chunk keeps the initial load free of
             // the editor.

@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import type { Memo } from "@/api";
-import { AiInsightDialog } from "@/components/ai-insight-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +36,15 @@ import { useI18n } from "@/i18n";
 const ShareImageDialog = lazy(() =>
   import("@/components/share-image-dialog").then((module) => ({
     default: module.ShareImageDialog,
+  })),
+);
+
+// The insight dialog renders the memo through `memo-content`, i.e. the whole
+// markdown pipeline. Keeping it static put those bytes in the startup graph
+// for every card on the timeline; it now loads the first time a menu opens it.
+const AiInsightDialog = lazy(() =>
+  import("@/components/ai-insight-dialog").then((module) => ({
+    default: module.AiInsightDialog,
   })),
 );
 
@@ -88,6 +96,9 @@ export function MemoCardMenu({
   // Latch: mount the lazy dialog on first open, then keep it mounted so the
   // close animation still plays (the chunk stays out of the entry graph).
   const [shareImageMounted, setShareImageMounted] = useState(false);
+  // Same latch for the insight dialog: its chunk may only arrive after the
+  // dialog has been asked to open, so keep it mounted once it has appeared.
+  const [insightMounted, setInsightMounted] = useState(false);
   return (
     <>
       {(canManage || canGovern) && (
@@ -162,7 +173,12 @@ export function MemoCardMenu({
                       <ImageIcon />
                       {t("share.imageCard")}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsInsightOpen(true)}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setInsightMounted(true);
+                        setIsInsightOpen(true);
+                      }}
+                    >
                       <BrainCircuitIcon />
                       {t("ai.insight.title")}
                     </DropdownMenuItem>
@@ -227,11 +243,15 @@ export function MemoCardMenu({
           />
         </Suspense>
       )}
-      <AiInsightDialog
-        memo={memo}
-        open={isInsightOpen}
-        onOpenChange={setIsInsightOpen}
-      />
+      {insightMounted && (
+        <Suspense fallback={null}>
+          <AiInsightDialog
+            memo={memo}
+            open={isInsightOpen}
+            onOpenChange={setIsInsightOpen}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

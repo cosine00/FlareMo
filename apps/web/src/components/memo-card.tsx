@@ -3,13 +3,14 @@ import {
   type Dispatch,
   memo,
   type SetStateAction,
+  Suspense,
   useCallback,
   useRef,
   useState,
 } from "react";
 import type { Attachment, Memo, MemoVisibility, Share } from "@/api";
 import { MemoCardBody } from "@/components/memo-card/memo-card-body";
-import { MemoCardEditor } from "@/components/memo-card/memo-card-editor";
+import { MemoCardEditor } from "@/components/memo-card/memo-card-editor-lazy";
 import { MemoCardHeader } from "@/components/memo-card/memo-card-header";
 import { useMemoCardActions } from "@/components/memo-card/use-memo-card-actions";
 import { cn } from "@/lib/utils";
@@ -167,19 +168,28 @@ export const MemoCard = memo(function MemoCard({
         onRequestVisibility={onRequestVisibility}
       />
       {isEditing ? (
-        <MemoCardEditor
-          attachments={attachments}
-          content={draftContent}
-          isSaving={isSaving}
-          isUploadingInline={isUploadingInline}
-          setIsUploadingInline={setIsUploadingInline}
-          editorRef={editEditorRef}
-          memoName={memo.name}
-          memoVisibility={memo.visibility}
-          onCancel={stopEditing}
-          onContentChange={setDraftContent}
-          onSave={saveEditing}
-        />
+        <Suspense
+          fallback={
+            <div
+              aria-hidden
+              className="mx-4 mb-4 min-h-32 rounded-lg border bg-muted/40 motion-safe:animate-pulse"
+            />
+          }
+        >
+          <MemoCardEditor
+            attachments={attachments}
+            content={draftContent}
+            isSaving={isSaving}
+            isUploadingInline={isUploadingInline}
+            setIsUploadingInline={setIsUploadingInline}
+            editorRef={editEditorRef}
+            memoName={memo.name}
+            memoVisibility={memo.visibility}
+            onCancel={stopEditing}
+            onContentChange={setDraftContent}
+            onSave={saveEditing}
+          />
+        </Suspense>
       ) : (
         <MemoCardBody
           attachments={attachments}
