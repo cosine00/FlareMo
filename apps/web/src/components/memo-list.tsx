@@ -43,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n";
 import { getMemoResourceId } from "@/lib/memo";
 import type { TimelineLayout } from "@/lib/timeline-layout";
+import { shouldVirtualize } from "@/lib/timeline-virtualization";
 import { MemoCard } from "./memo-card";
 
 // The share-image dialog pulls in html-to-image and the plugin card registry;
@@ -57,14 +58,6 @@ const ShareImageDialog = lazy(() =>
 const EMPTY_ATTACHMENTS: Attachment[] = [];
 /** Shared empty index list so the extractor keeps a stable reference. */
 const EMPTY_INDEXES: number[] = [];
-
-/**
- * Below this many rendered cards the plain map is cheaper than virtualization:
- * the whole list is mounted anyway, and the extra wrappers would only add
- * measurement work. Above it, a few hundred cards is where the DOM — not the
- * network — becomes the bottleneck.
- */
-const VIRTUALIZE_THRESHOLD = 40;
 
 /** Overscan in cards, so a fast scroll never flashes an empty gap. */
 const VIRTUAL_OVERSCAN = 6;
@@ -368,6 +361,12 @@ export const MemoList = memo(function MemoList({
   const [editingMemoNames, setEditingMemoNames] = useState<Set<string>>(
     () => new Set(),
   );
+  // Latched, never released while mounted: once the list is virtualized, a
+  // shorter render (a narrow tag, the last page) keeps the same tree instead
+  // of swapping back and moving the reader again.
+  const wantsVirtual = shouldVirtualize(memos.length, hasNextPage);
+  const [virtualize, setVirtualize] = useState(wantsVirtual);
+  if (wantsVirtual && !virtualize) setVirtualize(true);
 
   const handleEditingChange = useCallback(
     (memoName: string, editing: boolean) => {
@@ -560,7 +559,7 @@ export const MemoList = memo(function MemoList({
             </div>
           ))}
         </div>
-      ) : memos.length > VIRTUALIZE_THRESHOLD ? (
+      ) : virtualize ? (
         <VirtualizedCards
           attachmentsByMemo={attachmentsByMemo}
           editingMemoNames={editingMemoNames}
