@@ -343,7 +343,7 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
       </header>
 
       {previewMode ? (
-        <div className="memo-markdown min-h-svh px-2 text-[15px] leading-7">
+        <div className="memo-markdown min-h-svh px-2">
           <h1 className="mb-2 text-2xl font-semibold tracking-tight">
             {title || t("article.titlePlaceholder")}
           </h1>

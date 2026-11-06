@@ -108,19 +108,32 @@
        faces must get first pick, while Arabic still lands on the bundled font
        wherever the platform ships none. MiSans / HarmonyOS Sans are name
        references only — their licenses forbid bundling them into this repo. */
+    /* The CJK tier sits immediately after Geist, before every legacy Latin
+       name. Font matching is per character and walks the list in order, so any
+       Latin face listed ahead of `--font-cjk` gets first pick of the Han
+       characters too — and a font-replacing extension or a browser font
+       override is free to redeclare `Segoe UI` / `Arial` / `sans-serif` with a
+       CJK `unicode-range`, which then paints every Chinese glyph in the
+       replacement face while `--font-cjk-chosen` is never consulted. That is
+       exactly how a chosen page face ends up "applied" and invisible at the
+       same time. Geist stays first because it is ours and carries no Han
+       glyphs, so it cannot intercept anything. */
     --font-heading:
-        "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI",
-        var(--font-cjk), "Noto Sans Arabic Variable", system-ui, sans-serif;
+        "Geist Variable", var(--font-cjk), -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "Noto Sans Arabic Variable", system-ui, sans-serif;
     --font-sans:
-        "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI",
-        var(--font-cjk), "Noto Sans Arabic Variable", system-ui, sans-serif;
+        "Geist Variable", var(--font-cjk), -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "Noto Sans Arabic Variable", system-ui, sans-serif;
     /* Han is appended before the generic keyword so CJK inside a monospace
        context (a Chinese comment in a fenced code block, the `mono` share
        card's body) resolves per script instead of falling through to whatever
-       the browser happens to pick. Latin still wins on the first entry. */
+       the browser happens to pick. Latin still wins on the first entry:
+       `ui-monospace` is the platform's own fixed face and, unlike `Consolas`
+       or `Menlo`, it is a keyword no font-override rule can redeclare — which
+       is why it leads and the named faces follow the CJK tier. */
     --font-mono:
-        ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
-        var(--font-cjk), monospace;
+        ui-monospace, var(--font-cjk), "SF Mono", SFMono-Regular, Menlo,
+        Consolas, monospace;
     /* Fourth tier, exposed to share-card plugins as `family: "serif"`. Latin
        keeps Georgia — present on every desktop, so an exported card rasterizes
        the same everywhere — and the Han side is script-scoped below for the
@@ -656,27 +669,82 @@
     background-image: var(--paper-grain);
     scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent) transparent;
     text-rendering: optimizeLegibility;
+    /* Reader weight (设置 → 外观 → 字重). Inherited, so prose, editor, tables
+       and chrome all follow one value; the `font-*` utilities still win where
+       an element asks for its own emphasis. */
+    font-weight: var(--page-text-weight, 400);
+    /* And reader size for the elements that never name one: `--text-base` is
+       1rem at the default scale, so this is a no-op until the reader moves
+       the slider, at which point class-less text grows with the rest
+       instead of staying pinned to the browser default. */
+    font-size: var(--text-base);
     }
   html {
     @apply font-sans;
+    }
+  /* Reader size (设置 → 外观 → 字号), as a multiplier.
+     
+     Every named text utility resolves through `--text-*`
+     (`.text-sm { font-size: var(--text-sm) }`), so overriding those scales the
+     type and nothing else — padding, gaps and widths are declared in rem and
+     keep their shipped size. Root `font-size` would have dragged all of them
+     along and turned a reading preference into app-wide zoom.
+     
+     These live in `@layer base` on purpose: Tailwind emits its defaults in
+     `@layer theme`, which base follows, so the later layer wins without an
+     `!important` and without a specificity race.
+     
+     `--reading-size`/`--reading-leading` are the prose pair (15px/28px). Memo
+     bodies are set in px rather than a text utility so they stay legible at the
+     shipped size, and both are multiplied here so text and leading grow
+     together instead of the lines crowding as the glyphs get bigger. */
+  :root {
+    --page-text-scale: 1;
+    --page-text-weight: 400;
+    --reading-size: calc(15px * var(--page-text-scale));
+    --reading-leading: calc(28px * var(--page-text-scale));
+    --text-xs: calc(0.75rem * var(--page-text-scale));
+    --text-sm: calc(0.875rem * var(--page-text-scale));
+    --text-base: calc(1rem * var(--page-text-scale));
+    --text-lg: calc(1.125rem * var(--page-text-scale));
+    --text-xl: calc(1.25rem * var(--page-text-scale));
+    --text-2xl: calc(1.5rem * var(--page-text-scale));
+    --text-3xl: calc(1.875rem * var(--page-text-scale));
+    --text-4xl: calc(2.25rem * var(--page-text-scale));
+    /* The display tier ships with the theme but has no prose surface of its
+       own yet — the auth frame's headline is the one user today. Overriding
+       keeps even that headline on the reader's scale instead of freezing at
+       theme size. */
+    --text-5xl: calc(3rem * var(--page-text-scale));
+    --text-6xl: calc(3.75rem * var(--page-text-scale));
+    --text-7xl: calc(4.5rem * var(--page-text-scale));
+    --text-8xl: calc(6rem * var(--page-text-scale));
+    --text-9xl: calc(8rem * var(--page-text-scale));
     }
   /* CJK fallback list, keyed off the document language that I18nProvider
      writes to <html lang>. Font matching walks the family list per character,
      so a single shared list would hand Japanese kana/kanji to PingFang SC and
      render them with Chinese glyph forms; scoping by :lang() keeps each
-     script on its own system face (and Korean off a last-resort fallback). */
+     script on its own system face (and Korean off a last-resort fallback).
+
+     A reader-chosen page face (设置 → 外观 → 页面字体) lands in
+     `--font-cjk-chosen` as `"Family", var(--font-cjk-platform)`, so it wins
+     where the platform list applied while still degrading to those same
+     system faces if the webfont never arrives. Only the platform list is
+     language-scoped: the chosen face is applied to every script on purpose. */
   :root {
-    --font-cjk: "PingFang SC", "Hiragino Sans GB", MiSans,
+    --font-cjk-platform: "PingFang SC", "Hiragino Sans GB", MiSans,
       "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans CJK SC",
       "Noto Sans SC";
+    --font-cjk: var(--font-cjk-chosen, var(--font-cjk-platform));
     }
   :root:lang(ja) {
-    --font-cjk: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
-      "Yu Gothic", Meiryo, "Noto Sans JP", "Noto Sans CJK JP", "PingFang SC",
-      "Microsoft YaHei";
+    --font-cjk-platform: "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", "Noto Sans CJK JP",
+      "PingFang SC", "Microsoft YaHei";
     }
   :root:lang(ko) {
-    --font-cjk: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+    --font-cjk-platform: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
       "Noto Sans CJK KR", "PingFang SC", "Microsoft YaHei";
     }
   /* Same scoping for the serif tier the share-card plugins select. Exported
@@ -684,16 +752,39 @@
      Mincho forms here — the pre-existing Chinese-only list is exactly what
      painted their cards with Chinese glyphs. */
   :root {
-    --font-cjk-serif: "Songti SC", "STSong", "Noto Serif CJK SC",
+    --font-cjk-serif-platform: "Songti SC", "STSong", "Noto Serif CJK SC",
       "Noto Serif SC", SimSun;
+    --font-cjk-serif: var(
+      --font-cjk-serif-chosen,
+      var(--font-cjk-serif-platform)
+    );
     }
   :root:lang(ja) {
-    --font-cjk-serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP",
-      "Noto Serif CJK JP", "Songti SC";
+    --font-cjk-serif-platform: "Hiragino Mincho ProN", "Yu Mincho",
+      "Noto Serif JP", "Noto Serif CJK JP", "Songti SC";
     }
   :root:lang(ko) {
-    --font-cjk-serif: "AppleMyungjo", Batang, "Noto Serif KR",
+    --font-cjk-serif-platform: "AppleMyungjo", Batang, "Noto Serif KR",
       "Noto Serif CJK KR", "Songti SC";
+    }
+  /* Share cards are their own surface. Their defaults deliberately read the
+     *platform* lists, not --font-cjk: an exported PNG is rasterized through
+     foreignObject, which can only inline same-origin @font-face rules, so a
+     reader's remote page face would silently rasterize as a fallback. Keeping
+     cards on the platform faces makes the preview and the PNG identical, and
+     leaves the card's own font picker as the only thing that changes them. */
+  :root {
+    /* Same ordering rule as --font-sans: the Han tier comes before the legacy
+       Latin names, or a font-override rule riding on one of those names would
+       decide the cards' Chinese face — and the PNG is rasterized in this
+       document, so the preview would inherit the substitution too. */
+    --card-font-default: "Geist Variable", var(--font-cjk-platform),
+      -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Noto Sans Arabic Variable", system-ui, sans-serif;
+    --card-font-serif-default: Georgia, "Times New Roman",
+      var(--font-cjk-serif-platform), serif;
+    --card-font-mono-default: ui-monospace, var(--font-cjk-platform),
+      "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
     }
   /* 字距重置在 @layer base 之外（见下方说明）——写在层内会被 utilities 盖掉 */
   ::selection {
@@ -864,6 +955,31 @@ svg.lucide[stroke-width="2"] {
     display: none;
   }
 
+  /* Narrow gutter for panels nested inside the page (the tag drawer, the
+     card preview): the default 10px track reads as a second column edge
+     against a 300px sidebar. Thin on both engines so neither one falls back
+     to the platform default. */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 28%, transparent)
+      transparent;
+  }
+
+  .scroll-thin::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb {
+    border: 0;
+    border-radius: 999px;
+    background-color: color-mix(in oklab, var(--muted-foreground) 28%, transparent);
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+  }
+
   /* The brand gradient is only allowed on: the logo, the primary send/CTA
      button, the pinned marker and active-state indicators. */
   .bg-brand-gradient {
@@ -873,9 +989,47 @@ svg.lucide[stroke-width="2"] {
 
 @layer components {
   .memo-markdown {
-    @apply text-[15px] leading-7 text-foreground;
+    @apply text-foreground;
+    font-size: var(--reading-size);
+    line-height: var(--reading-leading);
     text-wrap: pretty;
     word-break: break-word;
+  }
+
+  /* Memo prose rendered outside .memo-markdown — the plain-text placeholder a
+     lazy memo shows before its markdown arrives, and the explore preview. Same
+     pair, so a memo does not resize when the two swap places. */
+  .reading-text {
+    font-size: var(--reading-size);
+    line-height: var(--reading-leading);
+  }
+
+  /* The settings surface keeps the type size the app shipped with while the
+     reader drags the size slider. Without this the whole sheet grows under the
+     pointer and slides the controls out from under the drag, and a settings
+     pane is chrome, not the note being measured. The preview inside the panel
+     restates the same values inline, so it still shows the real result. */
+  .page-text-locked {
+    --page-text-scale: 1;
+    --page-text-weight: 400;
+    --reading-size: 15px;
+    --reading-leading: 28px;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+    --text-5xl: 3rem;
+    --text-6xl: 3.75rem;
+    --text-7xl: 4.5rem;
+    --text-8xl: 6rem;
+    --text-9xl: 8rem;
+    /* The weight arrives as an inherited computed value from <body>, so the
+       variable above cannot undo it — it has to be reset here. */
+    font-weight: 400;
   }
 
   .memo-markdown > * + * {
@@ -1137,7 +1291,9 @@ svg.lucide[stroke-width="2"] {
      reading feel like the same surface, minus read-view extras (heading
      anchors, image frames). The box grows with content up to a cap. */
   .composer-editor-content {
-    @apply min-h-32 max-h-80 overflow-y-auto px-4 pt-4 pb-2 text-[15px] leading-7 outline-none motion-safe:transition-[min-height,max-height,padding] motion-safe:duration-200 motion-safe:ease-signal;
+    @apply min-h-32 max-h-80 overflow-y-auto px-4 pt-4 pb-2 outline-none motion-safe:transition-[min-height,max-height,padding] motion-safe:duration-200 motion-safe:ease-signal;
+    font-size: var(--reading-size);
+    line-height: var(--reading-leading);
   }
 
   /* Phones: the on-screen keyboard takes half the viewport, so the focused
@@ -1154,7 +1310,9 @@ svg.lucide[stroke-width="2"] {
      unclipped — a long article grows the page instead of scrolling inside
      a fixed box. */
   .article-editor-content {
-    @apply min-h-[55vh] px-1 pt-2 pb-2 text-[15px] leading-7 outline-none;
+    @apply min-h-[55vh] px-1 pt-2 pb-2 outline-none;
+    font-size: var(--reading-size);
+    line-height: var(--reading-leading);
   }
 
   .article-editor-content p {

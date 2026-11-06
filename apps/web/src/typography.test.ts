@@ -51,9 +51,15 @@ describe("app font stacks", () => {
     const list = (pattern: RegExp) =>
       css.match(pattern)?.[1].replace(/\s+/g, " ").trim() ?? "";
 
-    const zh = list(/:root\s*\{[^}]*--font-cjk:\s*([\s\S]*?);/);
-    const ja = list(/:root:lang\(ja\)\s*\{[^}]*--font-cjk:\s*([\s\S]*?);/);
-    const ko = list(/:root:lang\(ko\)\s*\{[^}]*--font-cjk:\s*([\s\S]*?);/);
+    // The platform list is the language-scoped one; --font-cjk itself is the
+    // indirection a reader-chosen page face writes into.
+    const zh = list(/:root\s*\{[^}]*--font-cjk-platform:\s*([\s\S]*?);/);
+    const ja = list(
+      /:root:lang\(ja\)\s*\{[^}]*--font-cjk-platform:\s*([\s\S]*?);/,
+    );
+    const ko = list(
+      /:root:lang\(ko\)\s*\{[^}]*--font-cjk-platform:\s*([\s\S]*?);/,
+    );
 
     expect(zh).toMatch(/^"PingFang SC"/);
     expect(ja).toMatch(/Hiragino Sans|Yu Gothic/);
@@ -61,6 +67,19 @@ describe("app font stacks", () => {
     // A ja/ko list must never lead with a Simplified-Chinese face.
     expect(ja).not.toMatch(/^"PingFang SC"/);
     expect(ko).not.toMatch(/^"PingFang SC"/);
+  });
+
+  it("lets a reader-chosen page face override the platform list", () => {
+    // 设置 → 外观 → 页面字体 writes these two on <html>. They must stay
+    // *inside* the var() fallback chain, not replace the platform list, or a
+    // blocked CDN would leave the page with a browser default face.
+    expect(declaration("font-cjk")).toContain(
+      "var(--font-cjk-chosen, var(--font-cjk-platform))",
+    );
+    expect(declaration("font-cjk-serif")).toContain("--font-cjk-serif-chosen");
+    expect(declaration("font-cjk-serif")).toContain(
+      "var(--font-cjk-serif-platform)",
+    );
   });
 });
 
@@ -77,12 +96,27 @@ describe("share card font tiers", () => {
     expect(serif).not.toMatch(/Songti|SimSun|Mincho/);
   });
 
+  it("keeps exported cards off the reader's page face", () => {
+    // Card defaults must read the platform lists: an export is rasterized
+    // through foreignObject, which can only inline same-origin @font-face
+    // rules, so a remote page face would silently become a fallback in the PNG.
+    for (const name of [
+      "card-font-default",
+      "card-font-serif-default",
+      "card-font-mono-default",
+    ]) {
+      const value = declaration(name);
+      expect(value).toMatch(/--font-cjk(-serif)?-platform/);
+      expect(value).not.toContain("--font-cjk-chosen");
+    }
+  });
+
   it("scopes the Han serif list per script", () => {
     const list = (pattern: RegExp) =>
       css.match(pattern)?.[1].replace(/\s+/g, " ").trim() ?? "";
-    const zh = list(/:root\s*\{[^}]*--font-cjk-serif:\s*([\s\S]*?);/);
+    const zh = list(/:root\s*\{[^}]*--font-cjk-serif-platform:\s*([\s\S]*?);/);
     const ja = list(
-      /:root:lang\(ja\)\s*\{[^}]*--font-cjk-serif:\s*([\s\S]*?);/,
+      /:root:lang\(ja\)\s*\{[^}]*--font-cjk-serif-platform:\s*([\s\S]*?);/,
     );
 
     expect(zh).toMatch(/^"Songti SC"/);

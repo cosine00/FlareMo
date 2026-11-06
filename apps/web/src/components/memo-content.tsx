@@ -350,10 +350,7 @@ export const MemoContent = memo(function MemoContent({
     };
 
   return (
-    <div
-      className={cn("memo-markdown text-[15px] leading-7", className)}
-      ref={containerRef}
-    >
+    <div className={cn("memo-markdown", className)} ref={containerRef}>
       <Markdown
         components={{
           p({ children, node, ...props }) {

@@ -12,7 +12,7 @@ function PlainMemoContent({
   content: string;
 }) {
   return (
-    <div className={className ?? "text-[15px] leading-7 whitespace-pre-wrap"}>
+    <div className={className ?? "reading-text whitespace-pre-wrap"}>
       {content}
     </div>
   );

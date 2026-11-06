@@ -3,8 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrandingProvider } from "@/branding";
+import { PageTypefaceProvider } from "@/components/page-typeface-provider.tsx";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { getInitialLocale, I18nProvider, loadLocaleMessages } from "@/i18n.tsx";
+import { applyStoredPageText } from "@/lib/page-text.ts";
+import { applyStoredPageTypeface } from "@/lib/page-typeface.ts";
 import { ensurePwaServiceWorkerRegistration } from "./pwa.ts";
 
 import "./index.css";
@@ -41,6 +44,14 @@ if (!root) {
 
 void ensurePwaServiceWorkerRegistration();
 
+// Hand <html> the stored page face before the first frame. Doing it after
+// mount would paint the system fonts first and then swap, which on a long note
+// is a visible reflow of every line.
+applyStoredPageTypeface();
+// Same reason for the reader's text size and weight: a note that renders at
+// 15px and then reflows to 19px is worse than one that starts at 19px.
+applyStoredPageText();
+
 // Fetch the initial locale's catalog before first paint: en-US resolves
 // synchronously, and for the other seven this one chunk is the difference
 // between a correct first frame and an English flash. `loadLocaleMessages`
@@ -61,7 +72,9 @@ void Promise.race([
         <BrandingProvider>
           <I18nProvider>
             <ThemeProvider>
-              <App />
+              <PageTypefaceProvider>
+                <App />
+              </PageTypefaceProvider>
             </ThemeProvider>
           </I18nProvider>
         </BrandingProvider>

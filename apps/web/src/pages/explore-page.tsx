@@ -50,9 +50,7 @@ export function ExplorePage() {
             </p>
           </div>
           <Button
-            render={
-              <Link to={signedIn ? "/" : "/login"} />
-            }
+            render={<Link to={signedIn ? "/" : "/login"} />}
             size="sm"
             variant="outline"
           >
@@ -106,7 +104,7 @@ export function ExplorePage() {
               {formatMemoTime(memo.createTime, locale)}
             </time>
             <LazyMemoContent
-              className="text-[15px] leading-7 [&_img]:rounded-lg"
+              className="reading-text [&_img]:rounded-lg"
               content={memo.content}
             />
             {memo.tags.length > 0 && (

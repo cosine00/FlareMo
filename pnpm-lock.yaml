@@ -182,6 +182,9 @@ importers:
       '@fontsource-variable/noto-sans-arabic':
         specifier: ^5.3.0
         version: 5.3.0
+      '@free-fonts/zhuque-fangsong':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@shikijs/rehype':
         specifier: ^4.4.3
         version: 4.4.3
@@ -1520,6 +1523,9 @@ packages:
 
   '@fontsource-variable/noto-sans-arabic@5.3.0':
     resolution: {integrity: sha512-Rz8+DBzza3//cmN+DBQajJhx3x+Dx12eUgnQsTOgPWbOT0+In6APmE8z4I/QQnUWfAx+s8l93+60qDT5vJH1sA==}
+
+  '@free-fonts/zhuque-fangsong@1.0.0':
+    resolution: {integrity: sha512-XevMrKsZOM9yTey7Hah1eGNOArz7ouGNOR1yaNcjGA3h/sUPereBVHx/bP4HKhDSRpQAOM5gHqm7mwnLDKrSZA==}
 
   '@hono/node-server@2.1.1':
     resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
@@ -5546,6 +5552,8 @@ snapshots:
   '@fontsource-variable/geist@5.3.0': {}
 
   '@fontsource-variable/noto-sans-arabic@5.3.0': {}
+
+  '@free-fonts/zhuque-fangsong@1.0.0': {}
 
   '@hono/node-server@2.1.1(hono@4.13.7)':
     dependencies:
