@@ -44,7 +44,11 @@ export function ExplorePage() {
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         <header className="flex items-center justify-between gap-3 border-b pb-4">
           <div className="flex flex-col gap-1">
-            <FlareMoLogo labelClassName="text-lg" markClassName="size-7" />
+            <FlareMoLogo
+              labelClassName="text-lg"
+              markClassName="size-7 rounded-md"
+              markUrl="/brand/truman-world-logo.png"
+            />
             <p className="text-xs text-muted-foreground">
               {t("explore.subtitle")}
             </p>

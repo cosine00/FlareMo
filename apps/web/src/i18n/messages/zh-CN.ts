@@ -423,7 +423,7 @@ const messages = {
   "explorer.heatmapDay": "{date}: {count}",
   "explorer.heatmapSummary": "最近 {days} 天共记录 {count} 条",
   "share.unavailable": "分享不可用。",
-  "explore.subtitle": "这里是我公开分享的笔记。",
+  "explore.subtitle": "楚门的世界",
   "explore.enterWorkspace": "进入工作台",
   "explore.emptyTitle": "还没有公开的笔记",
   "explore.emptyDescription": "公开的笔记会出现在这里。",

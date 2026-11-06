@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 type FlareMoLogoProps = {
   className?: string;
   labelClassName?: string;
+  markUrl?: string;
   markClassName?: string;
 };
 
@@ -16,6 +17,7 @@ type FlareMoLogoProps = {
 export function FlareMoLogo({
   className,
   labelClassName,
+  markUrl,
   markClassName,
 }: FlareMoLogoProps) {
   const { product, markLightUrl, markDarkUrl } = useBranding();
@@ -29,7 +31,7 @@ export function FlareMoLogo({
         alt=""
         aria-hidden="true"
         className={cn("size-7 shrink-0 dark:hidden", hover, markClassName)}
-        src={markLightUrl ?? "/brand/flaremo-mark-light-300.png"}
+        src={markUrl ?? markLightUrl ?? "/brand/flaremo-mark-light-300.png"}
       />
       <img
         alt=""
@@ -39,7 +41,12 @@ export function FlareMoLogo({
           hover,
           markClassName,
         )}
-        src={markDarkUrl ?? markLightUrl ?? "/brand/flaremo-mark-dark-320.png"}
+        src={
+          markUrl ??
+          markDarkUrl ??
+          markLightUrl ??
+          "/brand/flaremo-mark-dark-320.png"
+        }
       />
       <span
         className={cn(

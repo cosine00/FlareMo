@@ -144,7 +144,7 @@ function WorkspaceExplorerPanel({
         onClick={handleOpenSettings}
       >
         <SettingsIcon className="size-4 shrink-0 text-muted-foreground" />
-        <span className="truncate">{t("auth.accountTitle")}</span>
+        <span className="truncate">{t("settings.title")}</span>
       </Button>
     ),
     [handleOpenSettings, t],
