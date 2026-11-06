@@ -32,6 +32,7 @@ import {
   type TimelineLayout,
   writeTimelineLayout,
 } from "@/lib/timeline-layout";
+import type { SettingsSection } from "@/pages/account/settings-nav";
 import { AppRoutes } from "@/router-tree";
 import { indexRoute, registerWorkspaceComponent } from "@/routes/index-route";
 
@@ -100,8 +101,9 @@ export function FlareMoApp() {
   const [isTimelineScrolled, setIsTimelineScrolled] = useState(false);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
-  const [systemManagementOpen, setSystemManagementOpen] = useState(false);
+  // One dialog for every entry point; the section only decides where it opens.
+  const [settingsSection, setSettingsSection] =
+    useState<SettingsSection | null>(null);
 
   const scrollToTop = useCallback(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -256,8 +258,8 @@ export function FlareMoApp() {
       untagged,
       user: currentUserQuery.data,
       onDeleteTag: (tag) => deleteTagMutation.mutate(tag),
-      onOpenSettings: () => setAccountSettingsOpen(true),
-      onOpenSystemManagement: () => setSystemManagementOpen(true),
+      onOpenSettings: () => setSettingsSection("account"),
+      onOpenSystemManagement: () => setSettingsSection("team"),
       onRenameTag: (from, to) => renameTagMutation.mutate({ from, to }),
       onTagChange: setActiveTag,
       onToggleCollapsed: toggleSidebarCollapsed,
@@ -521,17 +523,11 @@ export function FlareMoApp() {
         </div>
       </div>
       <Suspense fallback={null}>
-        {accountSettingsOpen && (
+        {settingsSection && (
           <AccountSettingsDialog
+            initialSection={settingsSection}
             open
-            onClose={() => setAccountSettingsOpen(false)}
-          />
-        )}
-        {systemManagementOpen && (
-          <AccountSettingsDialog
-            mode="admin"
-            open
-            onClose={() => setSystemManagementOpen(false)}
+            onClose={() => setSettingsSection(null)}
           />
         )}
       </Suspense>

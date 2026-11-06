@@ -41,19 +41,22 @@ export type NavGroup = {
 };
 
 /** The sidebar's groups for the current viewer: the voice entry appears with
- *  the voice service, and the admin group with the team-admin role. */
+ *  the voice service, and the admin group with the team-admin role.
+ *
+ *  There used to be two dialogs — "settings" and "system management" — reached
+ *  from different places and each showing half of this table. One dialog now
+ *  shows everything the viewer may edit, because the split only ever meant
+ *  "remember which entry point you used". */
 export function settingsNavGroups({
   t,
   showVoiceSettings,
   isTeamAdmin,
   isInstanceOwner,
-  mode = "account",
 }: {
   t: (key: TranslationKey) => string;
   showVoiceSettings: boolean;
   isTeamAdmin: boolean;
   isInstanceOwner: boolean;
-  mode?: "account" | "admin";
 }): NavGroup[] {
   const preferences: NavGroup = {
     titleKey: "settings.group.preferences",
@@ -140,6 +143,6 @@ export function settingsNavGroups({
     ],
   };
 
-  if (mode === "admin") return isTeamAdmin ? [administration] : [];
-  return [preferences];
+  if (!isTeamAdmin) return [preferences];
+  return [preferences, administration];
 }

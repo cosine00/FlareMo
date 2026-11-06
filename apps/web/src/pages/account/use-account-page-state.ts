@@ -30,17 +30,17 @@ import { useAccountSettingsMutations } from "./use-account-settings-mutations";
  */
 export function useAccountPageState({
   open,
-  mode = "account",
+  initialSection = "account",
 }: {
   open: boolean;
-  mode?: "account" | "admin";
+  /** Which pane an entry point lands on. The dialog holds every section; the
+   *  account menu's "system management" entry just starts further down. */
+  initialSection?: SettingsSection;
 }) {
   const { locale, t } = useI18n();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
-  const [section, setSection] = useState<SettingsSection>(
-    mode === "admin" ? "team" : "account",
-  );
+  const [section, setSection] = useState<SettingsSection>(initialSection);
   const [mobileView, setMobileView] = useState<"master" | "detail">("master");
 
   const [username, setUsername] = useState("");
@@ -79,10 +79,10 @@ export function useAccountPageState({
   // Reset mobile view to master whenever the dialog opens fresh
   useEffect(() => {
     if (open) {
-      setSection(mode === "admin" ? "team" : "account");
+      setSection(initialSection);
       setMobileView("master");
     }
-  }, [mode, open]);
+  }, [initialSection, open]);
 
   useEffect(() => {
     if (session.data?.user.username) {
@@ -253,7 +253,6 @@ export function useAccountPageState({
     showVoiceSettings,
     isTeamAdmin,
     isInstanceOwner,
-    mode,
   });
 
   const allItems = navGroups.flatMap((group) => group.items);
