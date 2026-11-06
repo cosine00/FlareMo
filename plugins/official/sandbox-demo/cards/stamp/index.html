@@ -24,6 +24,11 @@
     line-height: 1.6;
     text-transform: uppercase;
     color: #8a8072;
+    /* One-line labels by construction. Export inlines every computed style,
+       which hands each flex item back as a fixed pixel width; the reused value
+       is a hair narrower than the text, so the last glyph drops to a line of
+       its own ("664" / "天"). Never breakable, never re-flowed. */
+    white-space: nowrap;
   }
   .postmark { position: relative; width: 104px; height: 104px; margin: -10px -8px 0 0; }
   .postmark canvas, .postmark .ring, .postmark .stamp-text {
@@ -72,10 +77,18 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    flex-wrap: nowrap;
     gap: 12px;
     border-top: 1px dashed #d8cfbe;
     padding-top: 12px;
     margin-top: 24px;
+  }
+  /* The footer is two one-line labels; the stats side yields first (an
+     ellipsis) rather than pushing the brand out of the frame. */
+  .foot .meta:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>
 </head>

@@ -145,6 +145,7 @@ export function validateContribution(raw: unknown): ContributionValidation {
       !isPlainObject(size) ||
       typeof size.width !== "number" ||
       typeof size.height !== "number" ||
+      (size.autoHeight !== undefined && typeof size.autoHeight !== "boolean") ||
       size.width < SHARE_CARD_SIZE_LIMITS.min ||
       size.width > SHARE_CARD_SIZE_LIMITS.max ||
       size.height < SHARE_CARD_SIZE_LIMITS.min ||
@@ -172,7 +173,11 @@ export function validateContribution(raw: unknown): ContributionValidation {
       isPlainObject(raw.size) &&
       typeof raw.size.width === "number" &&
       typeof raw.size.height === "number"
-        ? { width: raw.size.width, height: raw.size.height }
+        ? {
+            width: raw.size.width,
+            height: raw.size.height,
+            ...(raw.size.autoHeight === true ? { autoHeight: true } : {}),
+          }
         : DEFAULT_SHARE_CARD_SIZE,
   };
   if (isLocalizedText(raw.description)) {

@@ -101,6 +101,17 @@ describe("applyBindings", () => {
       }),
     ).toBe("");
   });
+
+  it("prints an always-complete dateline with {date.dotted}", () => {
+    expect(
+      applyBindings("{date.dotted}", {
+        ...context,
+        data: { ...context.data, dateDotted: "2026.10.30" },
+      }),
+    ).toBe("2026.10.30");
+    // Cards render before a host supplies it; an empty string beats a token.
+    expect(applyBindings("{date.dotted}", context)).toBe("");
+  });
 });
 
 describe("resolveOptionValues", () => {

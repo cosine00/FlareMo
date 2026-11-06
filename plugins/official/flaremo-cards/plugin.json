@@ -1,7 +1,7 @@
 {
   "specVersion": 1,
   "id": "flaremo-cards",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "name": {
     "zh-CN": "基础卡片",
     "en-US": "Basic cards",
@@ -13,8 +13,8 @@
     "ar": "البطاقات الأساسية"
   },
   "description": {
-    "zh-CN": "素白、日签、票根、明信片、语录、思考笺、素墨、暮火——精心打磨的内置卡片。",
-    "en-US": "Plain, daily, ticket, postcard, quote, mono, zen, and ember — crafted cards bundled with FlareMo."
+    "zh-CN": "素白、日签、票根、明信片、语录、思考笺、素墨、暮火、无忧——精心打磨的内置卡片。",
+    "en-US": "Plain, daily, ticket, postcard, quote, mono, zen, ember, and serene — crafted cards bundled with FlareMo."
   },
   "author": {
     "name": "FlareMo"
@@ -146,6 +146,57 @@
           "ar": "جمرة"
         },
         "document": "cards/ember.json"
+      },
+      {
+        "id": "wuyou",
+        "kind": "document",
+        "name": {
+          "zh-CN": "无忧",
+          "en-US": "Serene",
+          "ja": "無憂",
+          "ko": "무우",
+          "ru": "Безмятежность",
+          "fr": "Sérénité",
+          "es": "Serenidad",
+          "ar": "سكينة"
+        },
+        "options": [
+          {
+            "key": "caption",
+            "type": "text",
+            "label": {
+              "zh-CN": "章题",
+              "en-US": "Heading",
+              "ja": "見出し",
+              "ko": "머리글",
+              "ru": "Заголовок",
+              "fr": "En-tête",
+              "es": "Encabezado",
+              "ar": "عنوان"
+            },
+            "default": "Chapter.",
+            "maxLength": 24
+          },
+          {
+            "key": "signature",
+            "type": "text",
+            "label": {
+              "zh-CN": "署名",
+              "en-US": "Signature",
+              "ja": "署名",
+              "ko": "서명",
+              "ru": "Подпись",
+              "fr": "Signature",
+              "es": "Firma",
+              "ar": "توقيع"
+            },
+            "default": "",
+            "maxLength": 24
+          }
+        ],
+        "document": "cards/wuyou.json",
+        "size": { "width": 340, "height": 290, "autoHeight": true },
+        "preview": "cards/wuyou.preview.png"
       }
     ]
   }

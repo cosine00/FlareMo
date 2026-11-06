@@ -65,7 +65,14 @@ export type ShareCardOptionSpec =
       choices: Array<{ value: string; label: LocalizedText }>;
     };
 
-export type ShareCardSize = { width: number; height: number };
+export type ShareCardSize = {
+  width: number;
+  height: number;
+  /** Treat `height` as a floor instead of a frame: the card grows to fit its
+   *  content and the export follows. Documents that push their footer to the
+   *  bottom still get the minimum; text-heavy memos are not cropped. */
+  autoHeight?: boolean;
+};
 
 export const DEFAULT_SHARE_CARD_SIZE: ShareCardSize = {
   width: 340,

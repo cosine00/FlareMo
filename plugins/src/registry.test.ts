@@ -23,6 +23,7 @@ describe("bundled plugin registry", () => {
       "mono",
       "zen",
       "ember",
+      "wuyou",
     ]);
     for (const card of basics?.cards ?? []) {
       expect(card.payload.kind).toBe("document");
@@ -31,6 +32,19 @@ describe("bundled plugin registry", () => {
         expect(card.payload.document.root).toBeTruthy();
       }
     }
+  });
+
+  it("lets the 无忧 card grow past its frame", () => {
+    const basics = listBundledPlugins().find(
+      (plugin) => plugin.manifest.id === "flaremo-cards",
+    );
+    const wuyou = basics?.cards.find((card) => card.id === "wuyou");
+    // The reference design is content-led: 290px is the floor, not the size.
+    expect(wuyou?.size).toStrictEqual({
+      width: 340,
+      height: 290,
+      autoHeight: true,
+    });
   });
 
   it("resolves raw HTML for sandbox contributions", () => {

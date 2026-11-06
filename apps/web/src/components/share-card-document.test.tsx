@@ -16,6 +16,11 @@ describe("shareBodyText", () => {
       "## Title\n**bold** and *italic* and `code` and [link](https://example.com)";
     expect(shareBodyText(raw)).toBe("Title\nbold and italic and code and link");
   });
+
+  it("turns list markers into the bullet a card should print", () => {
+    const raw = "- first\n* second\n  - nested\n- [ ] todo";
+    expect(shareBodyText(raw)).toBe("• first\n• second\n• nested\n☐ todo");
+  });
 });
 
 describe("ShareCardDocumentView", () => {
@@ -77,6 +82,55 @@ describe("ShareCardDocumentView", () => {
     expect(html).not.toContain("min-height:0");
     expect(html).toContain("flex-basis:auto");
     expect(html).toContain("Hello FlareMo");
+  });
+
+  it("lets a chosen face reach cards that never name one", () => {
+    const html = renderToStaticMarkup(
+      <ShareCardDocumentView
+        context={context}
+        document={dummyDoc}
+        height={420}
+        mode="light"
+        width={340}
+      />,
+    );
+
+    // The dummy card sets no `font.family`, so it inherits: the root has to
+    // carry the overridable property or the dialog's preference stops here.
+    // Its fallback is the card-scoped default, never the page's --font-sans.
+    expect(html).toContain(
+      "font-family:var(--card-font-sans, var(--card-font-default))",
+    );
+  });
+
+  it("routes the monospace tier through the same override", () => {
+    const monoDoc: ShareCardDocument = {
+      specVersion: 1,
+      root: {
+        type: "column",
+        style: { minHeight: "100%", padding: 20 },
+        children: [
+          {
+            type: "text",
+            text: "{body}",
+            style: { flex: 1, font: { family: "mono", size: 14 } },
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <ShareCardDocumentView
+        context={context}
+        document={monoDoc}
+        height={420}
+        mode="light"
+        width={340}
+      />,
+    );
+
+    expect(html).toContain(
+      "var(--card-font-mono, var(--card-font-mono-default))",
+    );
   });
 
   it("splits paragraphs with compact margin when body has multiple paragraphs", () => {

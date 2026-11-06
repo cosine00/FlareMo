@@ -28,6 +28,14 @@ import {
   type ShareCardView,
   visibleCardViews,
 } from "@/lib/plugin-cards";
+import {
+  CARD_FONT_OPTIONS,
+  type CardFontId,
+  cardFontVars,
+  ensureCardFont,
+  readCardFont,
+  rememberCardFont,
+} from "@/lib/share-card-fonts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,17 +56,22 @@ type ShareImageDialogProps = {
 
 /** Card-image body: markdown flattened to the text a picture should carry. */
 export function shareBodyText(content: string) {
-  return content
-    .replace(/\r\n/g, "\n")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-    .replace(/^- \[[ xX]\] /gm, "☐ ")
-    .replace(/^#{1,3} /gm, "")
-    .replace(/\*\*([^*]+)\*\*/g, "$1")
-    .replace(/\*([^*]+)\*/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return (
+    content
+      .replace(/\r\n/g, "\n")
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+      .replace(/^- \[[ xX]\] /gm, "☐ ")
+      // A bulleted line keeps its marker, but as the glyph a printed card would
+      // use: `- item` is syntax, `• item` is how it should read.
+      .replace(/^\s*[-*+] /gm, "• ")
+      .replace(/^#{1,3} /gm, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
 }
 
 /**
@@ -110,6 +123,7 @@ export function ShareImageDialog({
   const branding = useBranding();
   const dark = useDarkMode();
   const [templateId, setTemplateId] = useState<string | null>(null);
+  const [fontId, setFontId] = useState<CardFontId>(readCardFont);
   const [isExporting, setIsExporting] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -171,6 +185,14 @@ export function ShareImageDialog({
     const parsed = new Date(memo.display_time);
     return Number.isNaN(parsed.getTime()) ? "" : String(parsed.getDate());
   }, [memo.display_time]);
+  // Dateline form for cards that print the date as a stamp: `date` is localized
+  // prose and hides the year on the current one, which a keepsake should keep.
+  const dateDotted = useMemo(() => {
+    const parsed = new Date(memo.display_time);
+    if (Number.isNaN(parsed.getTime())) return "";
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${parsed.getFullYear()}.${pad(parsed.getMonth() + 1)}.${pad(parsed.getDate())}`;
+  }, [memo.display_time]);
   const body = useMemo(() => shareBodyText(memo.content), [memo.content]);
   // The card shows real account stats, so while the query is in flight the
   // stats line stays blank rather than flashing "0 memos · 0 days" — and the
@@ -188,6 +210,7 @@ export function ShareImageDialog({
     () => ({
       body,
       date,
+      dateDotted,
       day,
       stats,
       locale,
@@ -197,7 +220,7 @@ export function ShareImageDialog({
         markDark: branding.markDarkUrl,
       },
     }),
-    [body, branding, date, day, locale, stats],
+    [body, branding, date, dateDotted, day, locale, stats],
   );
 
   const optionValues = useMemo(
@@ -208,6 +231,14 @@ export function ShareImageDialog({
       ),
     [card, pluginsQuery.data],
   );
+
+  // Warm the selected face while the dialog is open, so the first preview is
+  // already set in it and the export path rarely has to wait.
+  useEffect(() => {
+    if (open) void ensureCardFont(fontId, memo.content);
+  }, [fontId, memo.content, open]);
+
+  const fontVars = cardFontVars(fontId);
 
   const exportImage = async () => {
     if (!card || !payload) return;
@@ -220,6 +251,10 @@ export function ShareImageDialog({
       } else {
         const targetNode = exportRef.current || previewRef.current;
         if (targetNode) {
+          // A bundled face is fetched on selection, but the glyphs this note
+          // needs may still be in flight; rasterizing now would bake the
+          // fallback into the PNG.
+          await ensureCardFont(fontId, body);
           try {
             await document.fonts?.ready;
           } catch {
@@ -258,6 +293,10 @@ export function ShareImageDialog({
   };
 
   const size = card?.size ?? { width: 340, height: 420 };
+  // `hugHeight` cards use the size as a floor: the document's own min-height
+  // and content decide the rest, in the preview and in the PNG alike.
+  const hugHeight = payload?.kind === "document" && size.autoHeight === true;
+  const frameHeight = hugHeight ? 0 : size.height;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,9 +305,13 @@ export function ShareImageDialog({
           <DialogTitle>{t("share.imageTitle")}</DialogTitle>
           <DialogDescription>{t("share.imageSubtitle")}</DialogDescription>
         </DialogHeader>
-        <div className="flex justify-center py-1 max-h-[60vh] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.muted.foreground/30)_transparent]">
+        <div className="scroll-thin flex max-h-[60vh] justify-center overflow-y-auto py-1">
           {payload?.kind === "document" && (
-            <div ref={previewRef} className="rounded-lg shadow-sm">
+            <div
+              className="rounded-lg shadow-sm"
+              ref={previewRef}
+              style={fontVars}
+            >
               <ShareCardDocumentView
                 context={{
                   data: cardData,
@@ -276,7 +319,7 @@ export function ShareImageDialog({
                   mode: dark ? "dark" : "light",
                 }}
                 document={payload.document}
-                height={size.height}
+                height={frameHeight}
                 mode={dark ? "dark" : "light"}
                 width={size.width}
               />
@@ -321,7 +364,10 @@ export function ShareImageDialog({
               ref={exportRef}
               style={{
                 width: size.width,
-                minHeight: size.height,
+                // An auto-height card is measured after layout, so the frame
+                // must not impose a floor of its own.
+                minHeight: hugHeight ? undefined : size.height,
+                ...fontVars,
               }}
             >
               <ShareCardDocumentView
@@ -331,7 +377,7 @@ export function ShareImageDialog({
                   mode: dark ? "dark" : "light",
                 }}
                 document={payload.document}
-                height={size.height}
+                height={frameHeight}
                 mode={dark ? "dark" : "light"}
                 width={size.width}
               />
@@ -359,6 +405,40 @@ export function ShareImageDialog({
             </button>
           ))}
         </fieldset>
+        {payload?.kind === "document" && (
+          <fieldset
+            aria-label={t("share.fontLabel")}
+            className="flex flex-wrap items-center justify-center gap-1.5 border-0 p-0"
+          >
+            <span className="text-xs text-muted-foreground">
+              {t("share.fontLabel")}
+            </span>
+            {CARD_FONT_OPTIONS.map((option) => (
+              <button
+                aria-pressed={fontId === option.id}
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs motion-safe:transition-colors",
+                  fontId === option.id
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+                key={option.id}
+                style={
+                  option.id === "system"
+                    ? undefined
+                    : { fontFamily: option.stack }
+                }
+                type="button"
+                onClick={() => {
+                  setFontId(option.id);
+                  rememberCardFont(option.id);
+                }}
+              >
+                {option.id === "system" ? t("share.fontDefault") : option.label}
+              </button>
+            ))}
+          </fieldset>
+        )}
         <DialogFooter>
           <Button
             className="w-full sm:w-auto"

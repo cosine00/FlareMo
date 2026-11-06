@@ -22,13 +22,21 @@ import { isHanLocale } from "@/lib/han-locale";
  * Unknown nodes and unsafe values are skipped rather than rendered.
  */
 
-/** Maps the plugin-facing DocumentFontFamily onto the app's token tiers, so a
- *  card inherits the same language-scoped stacks the UI uses. */
+/** Maps the plugin-facing DocumentFontFamily onto its tier. The `--card-*`
+ *  indirection is what lets the share dialog offer a reader-chosen face without
+ *  the card JSON having to know about it: the dialog sets the custom property
+ *  on its wrapper and every node below inherits it.
+ *
+ *  Each fallback is a card-scoped variable rather than `var(--font-sans)`. The
+ *  page face a reader picks in 设置 → 外观 is a remote webfont, and an exported
+ *  PNG is rasterized through foreignObject, which can only inline same-origin
+ *  @font-face rules — so letting the page face reach the card would make the
+ *  same card export differently depending on a reading preference. */
 const FONT_STACKS: Record<string, string> = {
-  sans: "var(--font-sans)",
-  heading: "var(--font-heading)",
-  mono: "var(--font-mono)",
-  serif: "var(--font-serif)",
+  sans: "var(--card-font-sans, var(--card-font-default))",
+  heading: "var(--card-font-heading, var(--card-font-default))",
+  mono: "var(--card-font-mono, var(--card-font-mono-default))",
+  serif: "var(--card-font-serif, var(--card-font-serif-default))",
 };
 
 const SHADOWS: Record<string, string> = {
@@ -404,12 +412,19 @@ export function ShareCardDocumentView({
 }) {
   return (
     <div
+      // A card is a document of its own: the page-wide typeface force rule must
+      // never reach inside, or an exported PNG would come back in the reader's
+      // reading face instead of the card's own fonts.
+      data-keep-typeface=""
       style={{
         width,
         minHeight: height,
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
+        // Cards that never name a face lean on inheritance; pin the card
+        // default here so the page face cannot leak into an export.
+        fontFamily: "var(--card-font-sans, var(--card-font-default))",
       }}
     >
       {renderNode(

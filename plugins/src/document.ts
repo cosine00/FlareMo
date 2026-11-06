@@ -165,6 +165,10 @@ export type ShareCardData = {
   day: string;
   stats: string;
   locale: string;
+  /** `YYYY.MM.DD` in the reader's own zone. `date` is localized prose and
+   *  drops the year for the current one; a card that prints a dateline wants
+   *  the dotted form, which is locale-neutral and always complete. */
+  dateDotted?: string;
   brand: {
     product: string;
     markLight: string | null;
@@ -247,6 +251,8 @@ function lookupBinding(
       return ctx.data.day;
     case "day.padded":
       return ctx.data.day ? ctx.data.day.padStart(2, "0") : "";
+    case "date.dotted":
+      return ctx.data.dateDotted ?? "";
     case "stats":
       return ctx.data.stats;
     case "locale":

@@ -85,6 +85,7 @@ export const KNOWN_BINDINGS = new Set([
   "date",
   "day",
   "day.padded",
+  "date.dotted",
   "stats",
   "locale",
   "brand.product",
