@@ -7,7 +7,19 @@ import {
 } from "@flaremo/contracts";
 import type { FlareMoDb, MemoRow } from "@flaremo/db";
 import { attachments, memoRelations, memos, memoTags } from "@flaremo/db";
-import { and, asc, desc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  lt,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import { NotFoundError, ValidationError } from "./errors";
 import { compileMemoFilter } from "./memo-filter";
@@ -355,6 +367,33 @@ async function readOwnCorpusTagCounts(db: FlareMoDb, userId: string) {
 }
 
 /**
+ * How many live memos under `scope` carry no tag row at all — the count behind
+ * the sidebar's「无标签」row. Same predicate as the timeline's `untagged`
+ * filter (no `memo_tags` row for the memo, whoever wrote it), so the number a
+ * reader clicks equals the list they land on.
+ */
+async function countUntaggedMemos(
+  db: FlareMoDb,
+  scope: SQL | undefined,
+): Promise<number> {
+  const row = await db
+    .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
+    .from(memos)
+    .where(
+      and(
+        scope,
+        inArray(memos.status, ["normal", "archived"]),
+        sql`NOT EXISTS (
+          SELECT 1 FROM ${memoTags}
+          WHERE ${memoTags.memoId} = ${memos.id}
+        )`,
+      ),
+    )
+    .get();
+  return row?.count ?? 0;
+}
+
+/**
  * Stats for the viewer's own corpus, answered from `memo_hourly_counts`.
  *
  * This is the path the web workspace and the Memos-compatible clients take, and
@@ -387,10 +426,11 @@ async function getOwnCorpusMemoStats(
     buildActivity(anchorKey, new Map(), days).map((day) => day.date),
   );
   const { fromHour, toHour } = hourRangeForLocalWindow(anchorKey, days);
-  const [totals, hourRows, tagRows] = await Promise.all([
+  const [totals, hourRows, tagRows, untagged] = await Promise.all([
     readHourlyCountTotals(db, user.id),
     readHourlyCountsInRange(db, user.id, fromHour, toHour),
     readOwnCorpusTagCounts(db, user.id),
+    countUntaggedMemos(db, eq(memos.userId, user.id)),
   ]);
   const localCounts = new Map<string, number>();
   for (const row of hourRows) {
@@ -407,6 +447,7 @@ async function getOwnCorpusMemoStats(
       archived: totals.archived,
       trashed: totals.trashed,
       total: totals.normal + totals.archived,
+      untagged,
     },
     active_days: totals.activeDays,
     tags: tagRows,
@@ -459,72 +500,77 @@ export async function getMemoStats(
       (days + 1) * 24 * 60 * 60 * 1000,
   );
 
-  const [countRow, tagRows, activeDayRows, recentRows, spaceCountRows] =
-    await Promise.all([
+  const [
+    countRow,
+    tagRows,
+    activeDayRows,
+    recentRows,
+    spaceCountRows,
+    untagged,
+  ] = await Promise.all([
+    db
+      .select({
+        normal:
+          sql<number>`SUM(CASE WHEN ${memos.status} = 'normal' THEN 1 ELSE 0 END)`.mapWith(
+            Number,
+          ),
+        archived:
+          sql<number>`SUM(CASE WHEN ${memos.status} = 'archived' THEN 1 ELSE 0 END)`.mapWith(
+            Number,
+          ),
+        trashed:
+          sql<number>`SUM(CASE WHEN ${memos.status} = 'trashed' THEN 1 ELSE 0 END)`.mapWith(
+            Number,
+          ),
+        total:
+          sql<number>`SUM(CASE WHEN ${memos.status} IN ('normal', 'archived') THEN 1 ELSE 0 END)`.mapWith(
+            Number,
+          ),
+      })
+      .from(memos)
+      .where(corpus)
+      .get(),
+    db
+      .select({
+        name: memoTags.tag,
+        count: sql<number>`COUNT(*)`.mapWith(Number),
+      })
+      .from(memoTags)
+      .innerJoin(memos, eq(memoTags.memoId, memos.id))
+      .where(and(corpus, normalOrArchived))
+      .groupBy(memoTags.tag)
+      .orderBy(asc(memoTags.tag)),
+    db
+      .select({ day: sql<string>`substr(${memos.createdAt}, 1, 10)` })
+      .from(memos)
+      .where(and(corpus, normalOrArchived))
+      .groupBy(sql`substr(${memos.createdAt}, 1, 10)`),
+    db
+      .select({ createdAt: memos.createdAt })
+      .from(memos)
+      .where(
+        and(
+          corpus,
+          normalOrArchived,
+          gte(memos.createdAt, recentCutoff.toISOString()),
+        ),
+      ),
+    // Sidebar badges for the two spaces, computed under the same read
+    // boundary as the mixed timeline.
+    Promise.all([
       db
-        .select({
-          normal:
-            sql<number>`SUM(CASE WHEN ${memos.status} = 'normal' THEN 1 ELSE 0 END)`.mapWith(
-              Number,
-            ),
-          archived:
-            sql<number>`SUM(CASE WHEN ${memos.status} = 'archived' THEN 1 ELSE 0 END)`.mapWith(
-              Number,
-            ),
-          trashed:
-            sql<number>`SUM(CASE WHEN ${memos.status} = 'trashed' THEN 1 ELSE 0 END)`.mapWith(
-              Number,
-            ),
-          total:
-            sql<number>`SUM(CASE WHEN ${memos.status} IN ('normal', 'archived') THEN 1 ELSE 0 END)`.mapWith(
-              Number,
-            ),
-        })
-        .from(memos)
-        .where(corpus)
-        .get(),
-      db
-        .select({
-          name: memoTags.tag,
-          count: sql<number>`COUNT(*)`.mapWith(Number),
-        })
-        .from(memoTags)
-        .innerJoin(memos, eq(memoTags.memoId, memos.id))
-        .where(and(corpus, normalOrArchived))
-        .groupBy(memoTags.tag)
-        .orderBy(asc(memoTags.tag)),
-      db
-        .select({ day: sql<string>`substr(${memos.createdAt}, 1, 10)` })
-        .from(memos)
-        .where(and(corpus, normalOrArchived))
-        .groupBy(sql`substr(${memos.createdAt}, 1, 10)`),
-      db
-        .select({ createdAt: memos.createdAt })
+        .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
         .from(memos)
         .where(
-          and(
-            corpus,
-            normalOrArchived,
-            gte(memos.createdAt, recentCutoff.toISOString()),
-          ),
+          and(scopedReadScope(user, "personal"), eq(memos.status, "normal")),
         ),
-      // Sidebar badges for the two spaces, computed under the same read
-      // boundary as the mixed timeline.
-      Promise.all([
-        db
-          .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
-          .from(memos)
-          .where(
-            and(scopedReadScope(user, "personal"), eq(memos.status, "normal")),
-          ),
-        db
-          .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
-          .from(memos)
-          .where(
-            and(scopedReadScope(user, "team"), eq(memos.status, "normal")),
-          ),
-      ]),
-    ]);
+      db
+        .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
+        .from(memos)
+        .where(and(scopedReadScope(user, "team"), eq(memos.status, "normal"))),
+    ]),
+    countUntaggedMemos(db, corpus),
+  ]);
 
   const activityCounts = new Map<string, number>();
   for (const row of recentRows) {
@@ -541,6 +587,7 @@ export async function getMemoStats(
       archived: countRow?.archived ?? 0,
       trashed: countRow?.trashed ?? 0,
       total: countRow?.total ?? 0,
+      untagged,
       spaces: {
         personal: personalCountRows[0]?.count ?? 0,
         team: teamCountRows[0]?.count ?? 0,

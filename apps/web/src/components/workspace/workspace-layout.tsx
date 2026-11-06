@@ -24,6 +24,7 @@ import { useMemoMutations } from "@/hooks/use-memo-mutations";
 import { queryKeys } from "@/lib/query-keys";
 import { ACTIVITY_WINDOW_DAYS } from "@/lib/time-horizon";
 import { TIMELINE_SEARCH } from "@/lib/timeline-search";
+import type { SettingsSection } from "@/pages/account/settings-nav";
 
 const AccountSettingsDialog = lazy(() =>
   import("@/pages/account-page").then((module) => ({
@@ -80,8 +81,9 @@ export function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const navigate = useNavigate();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
-  const [systemManagementOpen, setSystemManagementOpen] = useState(false);
+  // One dialog for every entry point; the section only decides where it opens.
+  const [settingsSection, setSettingsSection] =
+    useState<SettingsSection | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
@@ -143,8 +145,8 @@ export function WorkspaceLayout({
       untagged: false,
       user: currentUserQuery.data,
       onDeleteTag: (tag) => deleteTag(tag),
-      onOpenSettings: () => setAccountSettingsOpen(true),
-      onOpenSystemManagement: () => setSystemManagementOpen(true),
+      onOpenSettings: () => setSettingsSection("account"),
+      onOpenSystemManagement: () => setSettingsSection("team"),
       onRenameTag: (from, to) => renameTag({ from, to }),
       // Tag filters live on the timeline; from any other workspace page a tag
       // click jumps there with the filter applied instead of doing nothing.
@@ -212,17 +214,11 @@ export function WorkspaceLayout({
         </div>
       </div>
       <Suspense fallback={null}>
-        {accountSettingsOpen && (
+        {settingsSection && (
           <AccountSettingsDialog
-            open={accountSettingsOpen}
-            onClose={() => setAccountSettingsOpen(false)}
-          />
-        )}
-        {systemManagementOpen && (
-          <AccountSettingsDialog
-            mode="admin"
-            open={systemManagementOpen}
-            onClose={() => setSystemManagementOpen(false)}
+            initialSection={settingsSection}
+            open
+            onClose={() => setSettingsSection(null)}
           />
         )}
       </Suspense>

@@ -471,6 +471,9 @@ describe("getMemoStats own-corpus read path", () => {
       archived: 1,
       trashed: 1,
       total: 4,
+      // None of these seeds carries a tag, and the trashed one is outside the
+      // live corpus the row counts.
+      untagged: 4,
     });
     // distinct UTC creation dates holding a normal or archived memo: the 5th,
     // 6th, and 7th. The trashed memo's day does not count.
@@ -603,6 +606,7 @@ describe("recalibration", () => {
       archived: 1,
       trashed: 1,
       total: 2,
+      untagged: 2,
     });
     expect(stats.active_days).toBe(2);
   });

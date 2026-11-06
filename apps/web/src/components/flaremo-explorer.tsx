@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import {
   BrainCircuitIcon,
   CalendarDaysIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   CompassIcon,
   FileTextIcon,
@@ -22,6 +23,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   getCaptureStatus,
   getDailyReview,
@@ -100,8 +102,12 @@ const NAV_ACTIVE = {
     "!bg-card !text-foreground font-medium shadow-xs ring-1 ring-border/70 dark:!bg-muted dark:ring-border [&>svg]:!text-primary",
 };
 
-/** Remembers whether the tag block is unfolded. Default: folded. */
-const TAGS_OPEN_STORAGE_KEY = "flaremo.explorer.tagsOpen";
+/** Remembers whether the tag tree under the stats card is unfolded.
+ *
+ *  v2: the tree used to live at the foot of the rail behind its own fold, and
+ *  anyone who had opened it once carried that preference over to a control it
+ *  no longer belongs to. A fresh key starts every reader folded, as asked. */
+const TAGS_OPEN_STORAGE_KEY = "flaremo.explorer.tagsOpen.v2";
 
 function readTagsOpen(): boolean {
   try {
@@ -150,12 +156,15 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
   });
   const dailyReviewCount = dailyReview.data?.memos.length ?? 0;
   const streak = useMemo(() => currentStreak(stats.activity), [stats.activity]);
+  // Older responses (or a stale cache) carry no untagged count; the row then
+  // simply omits its number rather than claiming zero.
+  const untaggedCount = stats.counts.untagged;
 
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const [tagsOpen, setTagsOpen] = useState<boolean>(readTagsOpen);
-  // An active tag filter must stay visible: folding the block over the
-  // selection would hide which filter is on.
-  const tagsExpanded = tagsOpen || Boolean(activeTag);
+  // Folded by default, and only ever toggled by the tag count in the stats
+  // card: that number is what readers reach for, while the block that used to
+  // trail the navigation read as decoration and pushed the calendar away.
   const toggleTags = () =>
     setTagsOpen((open) => {
       const next = !open;
@@ -184,9 +193,83 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
       <section className="mb-3 px-1 motion-safe:animate-rise">
         <div className="paper grid grid-cols-3 divide-x divide-border/60 rounded-xl border border-border/60 bg-card py-3 shadow-xs">
           <StatCell label={t("explorer.records")} value={stats.counts.total} />
-          <StatCell label={t("explorer.tags")} value={stats.tags.length} />
+          {/* The tag count is the drawer: the number is what a reader looks at
+              to decide whether to browse tags, so making it the control keeps
+              the calendar and the navigation still when the panel opens. */}
+          <StatCell
+            expanded={tagsOpen}
+            label={t("explorer.tags")}
+            value={stats.tags.length}
+            onClick={toggleTags}
+          />
           <StatCell label={t("explorer.streak")} value={streak} />
         </div>
+        {tagsOpen && (
+          <div className="scroll-thin mt-2 flex max-h-[min(50vh,20rem)] flex-col gap-1 overflow-y-auto overscroll-contain rounded-xl border border-border/60 bg-card px-1.5 py-1.5 shadow-xs motion-safe:animate-fade">
+            {/* Rows in the tree below are `chevron · glyph · label · count ·
+                actions`. This one is a sibling of those rows, not a header
+                above them, so it borrows their skeleton: an empty chevron
+                gutter, a glyph slot, and a reserved action gutter. Otherwise
+                the one row a reader scans first sits indented half as far as
+                the rest, and its count lands nowhere near theirs. */}
+            <button
+              aria-pressed={untagged}
+              className={cn(
+                "flex h-7 items-center gap-1 rounded-md pe-1 text-[13px] text-left motion-safe:transition-colors motion-safe:duration-150",
+                untagged
+                  ? "bg-card font-medium text-foreground shadow-xs ring-1 ring-border/70 dark:bg-muted"
+                  : "text-foreground/70 hover:bg-muted/70 hover:text-foreground",
+              )}
+              type="button"
+              onClick={() => {
+                onUntaggedChange(!untagged);
+                onNavigate?.();
+              }}
+            >
+              <span aria-hidden="true" className="size-5 shrink-0" />
+              <span className="flex size-5 shrink-0 items-center justify-center text-[13px] leading-none text-muted-foreground/60">
+                <HashIcon className="size-3.5" />
+              </span>
+              <span className="flex min-w-0 flex-1 items-center gap-1">
+                <span className="truncate">{t("explorer.untagged")}</span>
+                {typeof untaggedCount === "number" && untaggedCount > 0 && (
+                  <span className="ms-auto ps-1 text-xs tabular-nums text-muted-foreground/70">
+                    {untaggedCount}
+                  </span>
+                )}
+              </span>
+              <span
+                aria-hidden="true"
+                className="flex shrink-0 items-center gap-0.5"
+              >
+                <span className="size-5" />
+                <span className="size-5" />
+              </span>
+            </button>
+            {hierarchyPending ? (
+              // Loading state, not the empty state: flashing「无标签」before the
+              // real tree expands reads as data loss. Hold a few ghost rows.
+              <div aria-hidden="true" className="flex flex-col gap-1.5 px-1">
+                <Skeleton className="h-5 w-3/5" />
+                <Skeleton className="ml-4 h-5 w-2/5" />
+                <Skeleton className="h-5 w-1/2" />
+              </div>
+            ) : hierarchy.length > 0 ? (
+              <TagTree
+                activeTag={activeTag}
+                nodes={hierarchy}
+                onDeleteTag={onDeleteTag}
+                onNavigate={onNavigate}
+                onRenameTag={onRenameTag}
+                onTagChange={onTagChange}
+              />
+            ) : (
+              <div className="px-1 text-xs text-muted-foreground">
+                {t("explorer.noTags")}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="mb-2 px-1 motion-safe:animate-fade">
@@ -297,74 +380,18 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
         </Link>
       </nav>
 
-      <section className="mt-5 flex flex-col gap-1.5 px-1">
-        {/* The tag block starts folded. A mature timeline lists dozens of
-            tags, and leaving them open pushed the calendar and the navigation
-            off the first screen; the count keeps the section legible while it
-            is closed. */}
-        <button
-          aria-expanded={tagsExpanded}
-          aria-label={
-            tagsExpanded ? t("explorer.collapse") : t("explorer.expand")
-          }
-          className="group flex items-center gap-1 rounded-md px-2 pb-0.5 text-xs font-medium text-muted-foreground motion-safe:transition-colors hover:text-foreground"
-          type="button"
-          onClick={toggleTags}
-        >
-          <ChevronRightIcon
-            className={cn(
-              "size-3 shrink-0 motion-safe:transition-transform motion-safe:duration-150",
-              tagsExpanded && "rotate-90",
-            )}
-          />
-          <span className="min-w-0 flex-1 text-left">{t("explorer.tags")}</span>
-          <span className="tabular-nums opacity-60">{stats.tags.length}</span>
-        </button>
-        {tagsExpanded && (
-          <>
-            <button
-              aria-pressed={untagged}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-left motion-safe:transition-colors motion-safe:duration-150",
-                untagged
-                  ? "bg-card font-medium text-foreground shadow-xs ring-1 ring-border/70 dark:bg-muted"
-                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-              )}
-              type="button"
-              onClick={() => {
-                onUntaggedChange(!untagged);
-                onNavigate?.();
-              }}
-            >
-              <HashIcon className="size-3.5 shrink-0 opacity-60" />
-              <span className="truncate">{t("explorer.untagged")}</span>
-            </button>
-            {hierarchyPending ? (
-              // Loading state, not the empty state: flashing「无标签」before the
-              // real tree expands reads as data loss. Hold a few ghost rows.
-              <div aria-hidden="true" className="flex flex-col gap-1.5">
-                <Skeleton className="h-5 w-3/5" />
-                <Skeleton className="ml-4 h-5 w-2/5" />
-                <Skeleton className="h-5 w-1/2" />
-              </div>
-            ) : hierarchy.length > 0 ? (
-              <TagTree
-                activeTag={activeTag}
-                nodes={hierarchy}
-                onDeleteTag={onDeleteTag}
-                onRenameTag={onRenameTag}
-                onTagChange={onTagChange}
-                onNavigate={onNavigate}
-              />
-            ) : (
-              <div className="text-xs text-muted-foreground">
-                {t("explorer.noTags")}
-              </div>
-            )}
-          </>
-        )}
-      </section>
-      {footer && <div className="mt-auto px-1 pt-5 pb-1">{footer}</div>}
+      {/* The tag tree no longer trails the navigation: it opens from the count
+          in the stats card, so a second folded header here would only offer a
+          worse second way to the same list. */}
+      {footer && (
+        // Pinned to the bottom of the rail instead of trailing the tag tree:
+        // the tree routinely runs longer than the viewport, and the footer is
+        // the one thing that should stay put while it scrolls. `-mx-3 -mb-4`
+        // cancels the rail's own gutters so the hairline spans the column.
+        <div className="sticky bottom-0 z-10 -mx-3 -mb-4 mt-auto border-t border-border/50 bg-background/95 px-3 pt-2 pb-2 backdrop-blur-md">
+          {footer}
+        </div>
+      )}
     </aside>
   );
 });
@@ -474,7 +501,11 @@ function TagEmojiPicker({
     ? Math.max(8, anchor.top - EMOJI_PANEL_HEIGHT - 6)
     : anchor.bottom + 6;
 
-  return (
+  // Portalled to the body: the tag rows live in a scrolling drawer, and any
+  // ancestor that turns itself into a containing block (the drawer's fade
+  // animation, the sticky rail's backdrop blur) would clip a fixed panel —
+  // the picker opened and then painted nowhere.
+  return createPortal(
     <div
       className="fixed z-50 rounded-lg border border-border/70 bg-popover p-1.5 shadow-lg motion-safe:animate-fade"
       data-testid="tag-emoji-picker"
@@ -505,7 +536,8 @@ function TagEmojiPicker({
         <HashIcon className="size-3" />
         {t("explorer.tagEmojiReset")}
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -618,7 +650,9 @@ function TagTree({
             }}
           >
             <span className="truncate">{label}</span>
-            {node.count > 1 && (
+            {/* Every tag carries its number, including the ones with a single
+                memo: a blank tail used to read as "count not loaded yet". */}
+            {node.count > 0 && (
               <span className="ms-auto ps-1 text-xs tabular-nums text-muted-foreground/70">
                 {node.count}
               </span>
@@ -764,13 +798,59 @@ function TagRenameInput({
   );
 }
 
-function StatCell({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex flex-col items-center justify-center px-1 text-center">
+/**
+ * One cell of the stats card. The tag cell doubles as the drawer for the tag
+ * tree, so it becomes a button: same type scale, plus a quiet hover wash and a
+ * chevron that turns over with the panel. The other two stay inert — a number
+ * that does nothing should not pretend otherwise.
+ */
+function StatCell({
+  expanded,
+  label,
+  onClick,
+  value,
+}: {
+  expanded?: boolean;
+  label: string;
+  value: number;
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
       <div className="text-lg leading-none font-semibold tabular-nums tracking-tight text-foreground">
         {value}
       </div>
-      <div className="mt-1.5 text-xs text-muted-foreground">{label}</div>
-    </div>
+      <div className="mt-1.5 flex items-center justify-center gap-0.5 text-xs text-muted-foreground">
+        {label}
+        {onClick && (
+          <ChevronDownIcon
+            aria-hidden="true"
+            className={cn(
+              "size-3 shrink-0 motion-safe:transition-transform motion-safe:duration-150",
+              expanded && "rotate-180",
+            )}
+          />
+        )}
+      </div>
+    </>
+  );
+
+  if (!onClick) {
+    return (
+      <div className="flex flex-col items-center justify-center px-1 text-center">
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      aria-expanded={expanded}
+      className="flex flex-col items-center justify-center rounded-lg px-1 text-center outline-none motion-safe:transition-colors hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/25"
+      type="button"
+      onClick={onClick}
+    >
+      {body}
+    </button>
   );
 }

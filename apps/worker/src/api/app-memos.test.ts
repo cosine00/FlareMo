@@ -123,6 +123,8 @@ describe("FlareMo app memos API", () => {
       archived: 0,
       trashed: 0,
       total: 2,
+      // Both memos carry a tag, so the sidebar's「无标签」row stays empty.
+      untagged: 0,
     });
     expect(stats.tags).toEqual([
       { name: "exact", count: 1 },
@@ -135,6 +137,38 @@ describe("FlareMo app memos API", () => {
         0,
       ),
     ).toBe(2);
+  });
+
+  it("counts untagged memos for the sidebar's untagged row", async () => {
+    await createMemo("no tags here");
+    await json(
+      await fetchApp("http://flaremo.test/api/app/memos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          content: "carries a tag #工作",
+          payload: { tags: ["工作"] },
+        }),
+      }),
+    );
+    const trashed = await json<{ id: string }>(
+      await fetchApp("http://flaremo.test/api/app/memos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: "untagged then thrown away" }),
+      }),
+    );
+    await fetchApp(`http://flaremo.test/api/app/memos/${trashed.id}`, {
+      method: "DELETE",
+    });
+
+    const stats = await json<MemoStatsResponse>(
+      await fetchApp("http://flaremo.test/api/app/stats?time_zone=UTC"),
+    );
+    // Only the live memo without a tag: trashed rows are outside the corpus
+    // the row filters to, and a tagged memo is never "untagged".
+    expect(stats.counts.untagged).toBe(1);
+    expect(stats.counts.total).toBe(2);
   });
 
   it("serves the activity window the client asks for", async () => {

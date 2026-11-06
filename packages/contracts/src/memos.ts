@@ -234,6 +234,8 @@ export const memoStatsResponseSchema = z.object({
     archived: z.number().int().nonnegative(),
     trashed: z.number().int().nonnegative(),
     total: z.number().int().nonnegative(),
+    /** Normal + archived memos with no tag at all (the sidebar's「无标签」row). */
+    untagged: z.number().int().nonnegative().optional(),
     /** Normal-state counts per space, only present on space-scoped queries. */
     spaces: z
       .object({

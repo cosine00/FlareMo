@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { MenuIcon, PanelLeftCloseIcon } from "lucide-react";
+import { MenuIcon, PanelLeftCloseIcon, SettingsIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import type {
   CurrentFlareMoUser,
@@ -131,13 +131,29 @@ function WorkspaceExplorerPanel({
   );
 
   // The footer row used to carry the language switcher and the JSON
-  // import/export buttons. Both are settings, not navigation: they now live in
-  // the settings dialog (appearance → language, transfer → backup), so the
-  // sidebar ends on the tag tree and every width keeps its full height.
+  // import/export buttons; those are settings and now live inside the panel
+  // this button opens. The button itself is back because the tag tree grows
+  // taller than the viewport: a reader parked at the bottom of the list had to
+  // scroll back up to the account name to reach settings. It opens the same
+  // dialog as the account menu, which keeps its entry.
+  const footer = useMemo(
+    () => (
+      <Button
+        className="h-8 w-full justify-start gap-2 rounded-lg px-2 text-[13px] font-normal text-foreground/70 hover:bg-muted/70 hover:text-foreground"
+        variant="ghost"
+        onClick={handleOpenSettings}
+      >
+        <SettingsIcon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{t("auth.accountTitle")}</span>
+      </Button>
+    ),
+    [handleOpenSettings, t],
+  );
 
   return (
     <FlareMoExplorer
       activeTag={activeTag}
+      footer={footer}
       header={header}
       headerAction={headerAction}
       space={space}
