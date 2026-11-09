@@ -175,6 +175,7 @@ function ArticleReadingView({
             withHeadingIds
             onToggleTask={onToggleTask}
             onConvertTask={onConvertTask}
+            quotes
           />
           {galleryAttachments.length > 0 && (
             <AttachmentGallery attachments={galleryAttachments} />
@@ -214,6 +215,7 @@ function PlainReadingView({
         resolveImageDimensions={resolveImageDimensions}
         onToggleTask={onToggleTask}
         onConvertTask={onConvertTask}
+        quotes
       />
       {galleryAttachments.length > 0 && (
         <AttachmentGallery attachments={galleryAttachments} />

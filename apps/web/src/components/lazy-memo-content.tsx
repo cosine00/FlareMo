@@ -50,6 +50,7 @@ export const LazyMemoContent = memo(function LazyMemoContent({
   onToggleTask,
   onConvertTask,
   onTagClick,
+  quotes,
   rehypePlugins,
 }: {
   className?: string;
@@ -69,6 +70,8 @@ export const LazyMemoContent = memo(function LazyMemoContent({
   onConvertTask?: (lineIndex: number, text: string) => void;
   /** In-text `#tags` filter the timeline when given. */
   onTagClick?: (tag: string) => void;
+  /** Repeat each referenced note's text below the body; see MemoContent. */
+  quotes?: boolean;
   /** Article-surface extras (Shiki); see MemoContent. */
   rehypePlugins?: import("unified").Pluggable[];
 }) {
@@ -87,6 +90,7 @@ export const LazyMemoContent = memo(function LazyMemoContent({
           interactiveTaskLists={interactiveTaskLists}
           onTagClick={onTagClick}
           onTimestampClick={onTimestampClick}
+          quotes={quotes}
           rehypePlugins={rehypePlugins}
           resolveImageDimensions={resolveImageDimensions}
           withHeadingIds={withHeadingIds}

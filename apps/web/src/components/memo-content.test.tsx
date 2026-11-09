@@ -9,6 +9,23 @@ vi.mock("@/i18n", () => ({
   }),
 }));
 
+// Static markup has no router instance; the internal Link only needs to
+// surface its resolved href for these assertions.
+vi.mock("@tanstack/react-router", () => ({
+  Link: (props: {
+    to?: string;
+    params?: Record<string, string>;
+    children?: unknown;
+  }) => {
+    const href = Object.entries(props.params ?? {}).reduce(
+      (target, [key, value]) => target.replace(`$${key}`, value),
+      props.to ?? "",
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return require("react").createElement("a", { href }, props.children);
+  },
+}));
+
 describe("MemoContent", () => {
   it("renders single newline as <br> via remark-breaks", () => {
     const raw = "第一行\n第二行";
@@ -29,6 +46,24 @@ describe("MemoContent", () => {
     expect(html).toContain('href="#insight-source-current-4"');
     expect(html).toContain("align-super");
     expect(html).toContain(">4</a>");
+  });
+
+  // The blog's canonical reference format `[ID.1234](/m/1234/)` must open the
+  // memo's detail page here instead of 404ing on this host, exactly like the
+  // app-native `/memo/` links already did.
+  it("routes blog-style /m/ reference links to the memo detail page", () => {
+    const html = renderToStaticMarkup(
+      <MemoContent content="卖出一半优必选。[ID.1234](/m/1234/)" />,
+    );
+    expect(html).toContain('href="/memo/1234"');
+    expect(html).toContain(">ID.1234</a>");
+  });
+
+  it("keeps routing app-style /memo/ links to the detail page", () => {
+    const html = renderToStaticMarkup(
+      <MemoContent content="回看[昨天的记录](/memo/1234)" />,
+    );
+    expect(html).toContain('href="/memo/1234"');
   });
 });
 

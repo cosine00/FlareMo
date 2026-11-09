@@ -146,6 +146,7 @@ export function MemoCardBody({
               onToggleTask={taskInteraction?.onToggleTask}
               onConvertTask={taskInteraction?.onConvertTask}
               onTagClick={handleTagClick}
+              quotes
             />
           </div>
           <div

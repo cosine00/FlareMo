@@ -20,6 +20,7 @@ import remarkGfm from "remark-gfm";
 import { ImageLightbox } from "@/components/image-lightbox";
 import { MemoImageGallery } from "@/components/memo-image-gallery";
 import { MemoImageIcon } from "@/components/memo-image-icon";
+import { MemoQuoteCards, quoteIdsIn } from "@/components/memo-quote-cards";
 import { useI18n } from "@/i18n";
 import { createSlugger } from "@/lib/markdown-outline";
 import { markdownImages } from "@/lib/memo-media";
@@ -214,6 +215,7 @@ export const MemoContent = memo(function MemoContent({
   onToggleTask,
   onConvertTask,
   onTagClick,
+  quotes = false,
   rehypePlugins,
 }: {
   className?: string;
@@ -256,6 +258,13 @@ export const MemoContent = memo(function MemoContent({
   resolveImageDimensions?: (
     src: string,
   ) => { width: number; height: number } | undefined;
+  /**
+   * Repeats each referenced note's text under the body as a quote card — the
+   * blog does the same for `[ID.1234](/m/1234/)`. Off by default: comment
+   * bodies, insights and search excerpts quote nothing, and a timeline of
+   * thirty cards should not fan out thirty follow-up reads.
+   */
+  quotes?: boolean;
   /**
    * Article-surface extras (Shiki highlighting) passed straight through to
    * the markdown processor. Memo cards never set it.
@@ -328,6 +337,10 @@ export const MemoContent = memo(function MemoContent({
   );
   const slug = withHeadingIds ? createSlugger() : undefined;
   const interactiveTasks = Boolean(onToggleTask || onConvertTask);
+  const quoteIds = useMemo(
+    () => (quotes ? quoteIdsIn(body) : []),
+    [body, quotes],
+  );
 
   const heading = (Tag: HeadingTag) =>
     function Heading({
@@ -444,11 +457,19 @@ export const MemoContent = memo(function MemoContent({
               );
             }
 
-            if (href?.startsWith("/memo/")) {
+            // The blog's canonical reference format is `[ID.1234](/m/1234/)`
+            // (hug00's renderers and RSS builder both match it), so the same
+            // markdown must open the note here rather than 404 on this host.
+            const memoRoute = /^\/memo\/([\w-]+)\/?$|^\/m\/([\w-]+)\/?$/.exec(
+              href ?? "",
+            );
+            if (memoRoute) {
+              const memoId = memoRoute[1] ?? memoRoute[2];
               return (
                 <Link
                   className="font-medium text-foreground underline decoration-brand-500/50 underline-offset-2 transition-colors hover:text-brand-600 hover:decoration-brand-500"
-                  to={href}
+                  params={{ memoId }}
+                  to="/memo/$memoId"
                 >
                   {children}
                 </Link>
@@ -583,6 +604,7 @@ export const MemoContent = memo(function MemoContent({
       >
         {body}
       </Markdown>
+      <MemoQuoteCards ids={quoteIds} />
       {preview && (
         <ImageLightbox
           images={preview.images}
