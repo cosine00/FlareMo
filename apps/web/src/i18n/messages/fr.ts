@@ -377,6 +377,11 @@ const messages = {
     "L'éditeur enrichi n'a pas démarré ; édition en texte brut. Rien n'est perdu — modifiez et enregistrez normalement.",
   "composer.addAttachment": "Ajouter une pièce jointe",
   "composer.addTag": "Ajouter un tag",
+  "composer.quoteMemo": "Citer une note",
+  "composer.quoteSearch": "Rechercher des notes à citer…",
+  "composer.quoteHint":
+    "Tapez des mots-clés ou un ID (ex. ID.1234) pour retrouver une note passée ; la sélection insère un lien de référence au curseur.",
+  "composer.quoteEmpty": "Aucune note correspondante.",
   "composer.bulletList": "Liste",
   "composer.taskList": "Liste de tâches",
   "composer.send": "Envoyer",
@@ -1376,7 +1381,8 @@ const messages = {
   "theme.typefaceRefresh": "Recharger",
   "theme.typefaceRetry": "Réessayer",
   "theme.reading": "Taille et graisse du texte",
-  "theme.readingDescription": "Ne change que la typographie : les marges, la largeur de ligne et la mise en page restent identiques, tandis que le corps des notes, les titres, l'éditeur et l'interface suivent. Le panneau de réglages garde sa taille pour que les curseurs ne bougent pas sous le doigt.",
+  "theme.readingDescription":
+    "Ne change que la typographie : les marges, la largeur de ligne et la mise en page restent identiques, tandis que le corps des notes, les titres, l'éditeur et l'interface suivent. Le panneau de réglages garde sa taille pour que les curseurs ne bougent pas sous le doigt.",
   "theme.textSize": "Taille",
   "theme.textWeight": "Graisse",
   "theme.textWeightLight": "Fine",
@@ -1384,8 +1390,10 @@ const messages = {
   "theme.textWeightMedium": "Médium",
   "theme.textWeightSemibold": "Demi-gras",
   "theme.textWeightBold": "Gras",
-  "theme.textWeightHint": "Les crans intermédiaires exigent une police qui possède cette graisse. Les polices à graisse unique (WenKai, ZhiSong) sont identiques en 500 et 600, et le navigateur ne synthétise le gras qu'à partir de 600 ; les polices système et variables comme Geist réagissent à chaque cran.",
-  "theme.readingSample": "Cette ligne montre la taille et la graisse actuelles.",
+  "theme.textWeightHint":
+    "Les crans intermédiaires exigent une police qui possède cette graisse. Les polices à graisse unique (WenKai, ZhiSong) sont identiques en 500 et 600, et le navigateur ne synthétise le gras qu'à partir de 600 ; les polices système et variables comme Geist réagissent à chaque cran.",
+  "theme.readingSample":
+    "Cette ligne montre la taille et la graisse actuelles.",
   "theme.textReset": "Réinitialiser",
   "theme.language": "Langue",
   "theme.languageDescription": "Langue de l’interface",

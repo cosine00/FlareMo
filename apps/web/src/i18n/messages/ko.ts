@@ -366,6 +366,11 @@ const messages = {
     "리치 에디터 초기화에 실패하여 일반 텍스트로 편집합니다. 내용은 사라지지 않으니 그대로 저장하면 됩니다.",
   "composer.addAttachment": "첨부 파일 추가",
   "composer.addTag": "태그 추가",
+  "composer.quoteMemo": "메모 인용",
+  "composer.quoteSearch": "인용할 메모 검색…",
+  "composer.quoteHint":
+    "키워드나 ID(예: ID.1234)로 이전 메모를 찾아 선택하면 커서 위치에 참조 링크를 넣습니다.",
+  "composer.quoteEmpty": "일치하는 메모가 없습니다.",
   "composer.bulletList": "목록",
   "composer.taskList": "할 일 목록",
   "composer.send": "보내기",
@@ -1329,7 +1334,8 @@ const messages = {
   "theme.typefaceRefresh": "새로고침",
   "theme.typefaceRetry": "다시 시도",
   "theme.reading": "글자 크기와 굵기",
-  "theme.readingDescription": "글자만 바뀝니다. 여백과 줄 너비, 배치는 그대로이고 메모 본문·제목·편집기·인터페이스가 함께 따라갑니다. 설정 창은 원래 크기를 유지하므로 슬라이더를 끌어도 조작부가 움직이지 않습니다.",
+  "theme.readingDescription":
+    "글자만 바뀝니다. 여백과 줄 너비, 배치는 그대로이고 메모 본문·제목·편집기·인터페이스가 함께 따라갑니다. 설정 창은 원래 크기를 유지하므로 슬라이더를 끌어도 조작부가 움직이지 않습니다.",
   "theme.textSize": "크기",
   "theme.textWeight": "굵기",
   "theme.textWeightLight": "얇게",
@@ -1337,7 +1343,8 @@ const messages = {
   "theme.textWeightMedium": "중간",
   "theme.textWeightSemibold": "약간 굵게",
   "theme.textWeightBold": "굵게",
-  "theme.textWeightHint": "중간 굵기는 글꼴 자체에 그 굵기가 있어야 보입니다. 굵기가 하나뿐인 글꼴(문해, 지송)은 500과 600에서 차이가 없고 600 이상부터 브라우저가 합성 굵게를 적용합니다. 시스템 글꼴과 Geist 같은 가변 글꼴은 모든 단계가 적용됩니다.",
+  "theme.textWeightHint":
+    "중간 굵기는 글꼴 자체에 그 굵기가 있어야 보입니다. 굵기가 하나뿐인 글꼴(문해, 지송)은 500과 600에서 차이가 없고 600 이상부터 브라우저가 합성 굵게를 적용합니다. 시스템 글꼴과 Geist 같은 가변 글꼴은 모든 단계가 적용됩니다.",
   "theme.readingSample": "이 줄이 현재 크기와 굵기입니다.",
   "theme.textReset": "기본값으로",
   "theme.language": "표시 언어",

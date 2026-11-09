@@ -375,6 +375,11 @@ const messages = {
     "El editor enriquecido no se inició; se edita como texto plano. No se pierde nada: edita y guarda con normalidad.",
   "composer.addAttachment": "Agregar adjunto",
   "composer.addTag": "Agregar etiqueta",
+  "composer.quoteMemo": "Citar una nota",
+  "composer.quoteSearch": "Buscar notas para citar…",
+  "composer.quoteHint":
+    "Escribe palabras clave o un ID (p. ej. ID.1234) para buscar una nota anterior; al elegirla se inserta un enlace de referencia en el cursor.",
+  "composer.quoteEmpty": "No hay notas que coincidan.",
   "composer.bulletList": "Lista",
   "composer.taskList": "Lista de tareas",
   "composer.send": "Enviar",
@@ -1360,7 +1365,8 @@ const messages = {
   "theme.typefaceRefresh": "Recargar",
   "theme.typefaceRetry": "Reintentar",
   "theme.reading": "Tamaño y grosor del texto",
-  "theme.readingDescription": "Solo cambia la tipografía: los márgenes, el ancho de línea y la maquetación no se mueven, mientras el cuerpo de las notas, los títulos, el editor y la interfaz sí lo hacen. El panel de ajustes conserva su tamaño para que los controles no salten al arrastrar.",
+  "theme.readingDescription":
+    "Solo cambia la tipografía: los márgenes, el ancho de línea y la maquetación no se mueven, mientras el cuerpo de las notas, los títulos, el editor y la interfaz sí lo hacen. El panel de ajustes conserva su tamaño para que los controles no salten al arrastrar.",
   "theme.textSize": "Tamaño",
   "theme.textWeight": "Grosor",
   "theme.textWeightLight": "Fina",
@@ -1368,7 +1374,8 @@ const messages = {
   "theme.textWeightMedium": "Media",
   "theme.textWeightSemibold": "Seminegrita",
   "theme.textWeightBold": "Negrita",
-  "theme.textWeightHint": "Los pasos intermedios necesitan una fuente que incluya ese grosor. Las fuentes de un solo grosor (WenKai, ZhiSong) se ven igual en 500 y 600, y solo desde 600 el navegador sintetiza la negrita; las del sistema y las variables como Geist responden en todos los pasos.",
+  "theme.textWeightHint":
+    "Los pasos intermedios necesitan una fuente que incluya ese grosor. Las fuentes de un solo grosor (WenKai, ZhiSong) se ven igual en 500 y 600, y solo desde 600 el navegador sintetiza la negrita; las del sistema y las variables como Geist responden en todos los pasos.",
   "theme.readingSample": "Esta línea muestra el tamaño y el grosor actuales.",
   "theme.textReset": "Restablecer",
   "theme.language": "Idioma",

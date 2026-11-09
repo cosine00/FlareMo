@@ -338,6 +338,11 @@ const messages = {
     "富文本编辑器初始化失败，已切换为纯文本编辑；内容不会丢失，改完直接保存即可。",
   "composer.addAttachment": "添加附件",
   "composer.addTag": "添加标签",
+  "composer.quoteMemo": "引用记录",
+  "composer.quoteSearch": "搜索要引用的记录…",
+  "composer.quoteHint":
+    "输入关键词或记录编号（如 ID.1234）找到要引用的历史记录，选中后会在光标处插入引用链接。",
+  "composer.quoteEmpty": "没有找到匹配的记录。",
   "composer.bulletList": "列表",
   "composer.taskList": "待办列表",
   "composer.send": "发送",
@@ -1254,7 +1259,8 @@ const messages = {
   "theme.typefaceRefresh": "刷新页面",
   "theme.typefaceRetry": "重试",
   "theme.reading": "字号与字重",
-  "theme.readingDescription": "只调整文字本身：留白、行宽和排版都不动，便签正文、标题、编辑器与界面文字一起变化。设置面板保持原样，拖动滑块时控件不会跟着跳动。",
+  "theme.readingDescription":
+    "只调整文字本身：留白、行宽和排版都不动，便签正文、标题、编辑器与界面文字一起变化。设置面板保持原样，拖动滑块时控件不会跟着跳动。",
   "theme.textSize": "字号",
   "theme.textWeight": "字重",
   "theme.textWeightLight": "细",
@@ -1262,7 +1268,8 @@ const messages = {
   "theme.textWeightMedium": "中等",
   "theme.textWeightSemibold": "半粗",
   "theme.textWeightBold": "粗",
-  "theme.textWeightHint": "中间档位需要字体本身带这档粗细。只有一档的字体（霞鹜文楷、新致宋）在 500、600 上看不出差别，600 以上浏览器会做合成加粗；系统字体和 Geist 这类可变字体每一档都有效。",
+  "theme.textWeightHint":
+    "中间档位需要字体本身带这档粗细。只有一档的字体（霞鹜文楷、新致宋）在 500、600 上看不出差别，600 以上浏览器会做合成加粗；系统字体和 Geist 这类可变字体每一档都有效。",
   "theme.readingSample": "上面这行就是当前的字号与字重。",
   "theme.textReset": "恢复默认",
   "theme.language": "界面语言",

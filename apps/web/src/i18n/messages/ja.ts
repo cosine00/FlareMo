@@ -367,6 +367,11 @@ const messages = {
     "リッチエディターの初期化に失敗したため、プレーンテキストで編集しています。内容は失われません。そのまま保存できます。",
   "composer.addAttachment": "添付ファイルを追加",
   "composer.addTag": "タグを追加",
+  "composer.quoteMemo": "メモを引用",
+  "composer.quoteSearch": "引用するメモを検索…",
+  "composer.quoteHint":
+    "キーワードまたは ID（例: ID.1234）で過去のメモを探し、選ぶとカーソル位置に参照リンクを挿入します。",
+  "composer.quoteEmpty": "一致するメモがありません。",
   "composer.bulletList": "リスト",
   "composer.taskList": "チェックリスト",
   "composer.send": "送信",
@@ -1343,7 +1348,8 @@ const messages = {
   "theme.typefaceRefresh": "再読み込み",
   "theme.typefaceRetry": "再試行",
   "theme.reading": "文字サイズと太さ",
-  "theme.readingDescription": "変わるのは文字だけです。余白や行幅はそのままで、メモ本文・見出し・エディタ・インターフェースがまとめて変わります。設定画面は元の大きさを保つので、スライダーを動かしてもつまみがずれません。",
+  "theme.readingDescription":
+    "変わるのは文字だけです。余白や行幅はそのままで、メモ本文・見出し・エディタ・インターフェースがまとめて変わります。設定画面は元の大きさを保つので、スライダーを動かしてもつまみがずれません。",
   "theme.textSize": "サイズ",
   "theme.textWeight": "太さ",
   "theme.textWeightLight": "細",
@@ -1351,7 +1357,8 @@ const messages = {
   "theme.textWeightMedium": "中",
   "theme.textWeightSemibold": "やや太",
   "theme.textWeightBold": "太",
-  "theme.textWeightHint": "中間の太さはフォント自体にそのウェイトが必要です。ウェイトが一つしかないフォント（霞鹜文楷・新致宋）は 500 と 600 で変化せず、600 以上はブラウザが合成で太らせます。システムフォントや Geist のような可変フォントはすべての段階が効きます。",
+  "theme.textWeightHint":
+    "中間の太さはフォント自体にそのウェイトが必要です。ウェイトが一つしかないフォント（霞鹜文楷・新致宋）は 500 と 600 で変化せず、600 以上はブラウザが合成で太らせます。システムフォントや Geist のような可変フォントはすべての段階が効きます。",
   "theme.readingSample": "この行が現在のサイズと太さです。",
   "theme.textReset": "初期値に戻す",
   "theme.language": "表示言語",

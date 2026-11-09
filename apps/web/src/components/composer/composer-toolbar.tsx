@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { loadComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
+import { ComposerQuoteMenu } from "@/components/composer/composer-quote-menu";
 import { ComposerScheduleMenu } from "@/components/composer/composer-schedule-menu";
 import {
   type ActiveFormats,
@@ -105,6 +106,7 @@ export function ComposerToolbar({
       >
         <HashIcon />
       </ToolButton>
+      <ComposerQuoteMenu disabled={isPending} withEditor={withEditor} />
       <ToolButton
         disabled={isPending}
         label={t("composer.addAttachment")}

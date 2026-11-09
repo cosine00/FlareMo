@@ -371,6 +371,11 @@ const messages = {
     "The rich editor failed to start, so this is plain-text editing. Nothing is lost — edit and save as usual.",
   "composer.addAttachment": "Add attachment",
   "composer.addTag": "Add tag",
+  "composer.quoteMemo": "Quote a memo",
+  "composer.quoteSearch": "Search memos to quote…",
+  "composer.quoteHint":
+    "Type keywords or an ID (e.g. ID.1234) to find a past memo; picking one inserts a reference link at the caret.",
+  "composer.quoteEmpty": "No matching memos.",
   "composer.bulletList": "Bullet list",
   "composer.taskList": "Task list",
   "composer.send": "Send",
@@ -1335,7 +1340,8 @@ const messages = {
   "theme.typefaceRefresh": "Reload",
   "theme.typefaceRetry": "Retry",
   "theme.reading": "Text size & weight",
-  "theme.readingDescription": "Changes the type and nothing else: margins, line width and layout stay put while note bodies, headings, the editor and the interface follow. The settings sheet keeps its own size so the controls do not jump under the pointer.",
+  "theme.readingDescription":
+    "Changes the type and nothing else: margins, line width and layout stay put while note bodies, headings, the editor and the interface follow. The settings sheet keeps its own size so the controls do not jump under the pointer.",
   "theme.textSize": "Size",
   "theme.textWeight": "Weight",
   "theme.textWeightLight": "Light",
@@ -1343,7 +1349,8 @@ const messages = {
   "theme.textWeightMedium": "Medium",
   "theme.textWeightSemibold": "Semibold",
   "theme.textWeightBold": "Bold",
-  "theme.textWeightHint": "The middle stops need a face that ships that weight. Single-weight faces (WenKai, ZhiSong) look identical at 500 and 600, and only synthesize bold from 600 up; system faces and variable fonts such as Geist respond at every stop.",
+  "theme.textWeightHint":
+    "The middle stops need a face that ships that weight. Single-weight faces (WenKai, ZhiSong) look identical at 500 and 600, and only synthesize bold from 600 up; system faces and variable fonts such as Geist respond at every stop.",
   "theme.readingSample": "This line is your current size and weight.",
   "theme.textReset": "Reset",
   "theme.language": "Language",
