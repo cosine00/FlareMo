@@ -10,14 +10,15 @@ const SNIPPET_LIMIT = 200;
 
 /**
  * `[ID.1234](/m/1234/)` — the blog's canonical reference, which the composer
- * inserts and hug00 expands. Accepted here in its long and short target forms
- * so a note written for the blog reads the same inside FlareMo.
+ * inserts and hug00 expands. Accepted in both the relative form and the
+ * absolute `https://hux.ink/m/1234/` one, because a reference copied from the
+ * blog comes with its host attached.
  *
- * The target has to be site-relative: an absolute link to some other journal's
- * `/m/9/` is a link, not a reference to a note here.
+ * The memo path has to sit at the start of the target: `/foo/m/9/` on another
+ * site is a page that happens to mention a note, not a reference.
  */
 const MEMO_LINK_RE =
-  /\[[^\]]*\]\(\s*<?\/(?:m|memo)\/([\w-]+)\/?>?(?:\s+["'][^"']*["'])?\s*\)/g;
+  /\[[^\]]*\]\(\s*<?(?:(?:https?:)?\/\/[^\s/)]+)?\/(?:m|memo)\/([\w-]+)\/?>?(?:\s+["'][^"']*["'])?\s*\)/g;
 
 /**
  * The memos a body quotes, in reading order, deduplicated and capped. Only the

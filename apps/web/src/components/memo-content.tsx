@@ -460,11 +460,13 @@ export const MemoContent = memo(function MemoContent({
             // The blog's canonical reference format is `[ID.1234](/m/1234/)`
             // (hug00's renderers and RSS builder both match it), so the same
             // markdown must open the note here rather than 404 on this host.
-            const memoRoute = /^\/memo\/([\w-]+)\/?$|^\/m\/([\w-]+)\/?$/.exec(
-              href ?? "",
-            );
+            // The absolute form carries the blog's host, so it matches too.
+            const memoRoute =
+              /^(?:(?:https?:)?\/\/[^\s/]+)?\/(?:memo|m)\/([\w-]+)\/?$/.exec(
+                href ?? "",
+              );
             if (memoRoute) {
-              const memoId = memoRoute[1] ?? memoRoute[2];
+              const memoId = memoRoute[1];
               // When the quote cards are on, the prose carries a superscript
               // index instead of `ID.1234`: the number repeats what the card
               // below already says, and in a sentence it reads as noise.

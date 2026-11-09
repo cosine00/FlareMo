@@ -54,10 +54,16 @@ describe("quoteIdsIn", () => {
     expect(quoteIdsIn(body)).toEqual(["1", "2", "3"]);
   });
 
-  it("ignores links that are not memo references", () => {
-    expect(quoteIdsIn("[x](https://example.com/m/9/) [y](/posts/9/)")).toEqual(
-      [],
+  it("takes the absolute form the blog hands out", () => {
+    expect(quoteIdsIn("[ID.12](https://hux.ink/m/12/) 和 [x](/m/13/)")).toEqual(
+      ["12", "13"],
     );
+  });
+
+  it("ignores links that are not memo references", () => {
+    expect(
+      quoteIdsIn("[x](https://example.com/foo/m/9/) [y](/posts/9/)"),
+    ).toEqual([]);
   });
 });
 
@@ -70,6 +76,19 @@ describe("reference marks", () => {
     expect(html).toContain(">1</a>");
     // 句子里不再出现原始编号；卡片此时还没取到数据，所以整段都没有 ID.12。
     expect(html).not.toContain("ID.12");
+  });
+
+  it("marks an absolute reference the same as a relative one", () => {
+    // 从博客复制过来的引用带着域名，句子里也不该出现 `ID.1234`。
+    const html = render(
+      <MemoContent
+        content={"卖出一半 09880。[ID.1234](https://hux.ink/m/1234/)"}
+        quotes
+      />,
+    );
+    expect(html).toContain('class="memo-quote-mark"');
+    expect(html).toContain(">1</a>");
+    expect(html).not.toContain("ID.1234");
   });
 
   it("numbers several references in the order the cards appear", () => {
