@@ -7,6 +7,7 @@ import {
   ListOrderedIcon,
   ListTodoIcon,
 } from "lucide-react";
+import { ComposerQuoteMenu } from "@/components/composer/composer-quote-menu";
 import {
   type ActiveFormats,
   FORMAT_SHORTCUTS,
@@ -20,7 +21,7 @@ import { useI18n } from "@/i18n";
  * The card editor's tool rail. The main composer's rail carries voice, the
  * schedule menu and the long-form canvas — none of which mean anything while
  * editing an existing note in place — so this is the same insert/shape group
- * (tag, image, bold, bullets, numbers, to-dos) on its own.
+ * (tag, quote, image, bold, bullets, numbers, to-dos) on its own.
  */
 export function MemoEditorToolbar({
   activeFormats,
@@ -57,6 +58,7 @@ export function MemoEditorToolbar({
       >
         <HashIcon />
       </ToolButton>
+      <ComposerQuoteMenu disabled={disabled} withEditor={withEditor} />
       <ToolButton
         disabled={disabled}
         label={t("composer.addAttachment")}
