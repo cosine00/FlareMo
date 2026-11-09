@@ -465,6 +465,21 @@ export const MemoContent = memo(function MemoContent({
             );
             if (memoRoute) {
               const memoId = memoRoute[1] ?? memoRoute[2];
+              // When the quote cards are on, the prose carries a superscript
+              // index instead of `ID.1234`: the number repeats what the card
+              // below already says, and in a sentence it reads as noise.
+              const quoteIndex = memoId ? quoteIds.indexOf(memoId) : -1;
+              if (quoteIndex >= 0) {
+                return (
+                  <Link
+                    className="memo-quote-mark"
+                    params={{ memoId }}
+                    to="/memo/$memoId"
+                  >
+                    {quoteIndex + 1}
+                  </Link>
+                );
+              }
               return (
                 <Link
                   className="font-medium text-foreground underline decoration-brand-500/50 underline-offset-2 transition-colors hover:text-brand-600 hover:decoration-brand-500"

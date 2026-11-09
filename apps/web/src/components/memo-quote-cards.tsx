@@ -12,9 +12,12 @@ const SNIPPET_LIMIT = 200;
  * `[ID.1234](/m/1234/)` — the blog's canonical reference, which the composer
  * inserts and hug00 expands. Accepted here in its long and short target forms
  * so a note written for the blog reads the same inside FlareMo.
+ *
+ * The target has to be site-relative: an absolute link to some other journal's
+ * `/m/9/` is a link, not a reference to a note here.
  */
 const MEMO_LINK_RE =
-  /\[[^\]]*\]\(\s*<?[^)\s]*\/m(?:emo)?\/([\w-]+)\/?>?(?:\s+["'][^"']*["'])?\s*\)/g;
+  /\[[^\]]*\]\(\s*<?\/(?:m|memo)\/([\w-]+)\/?>?(?:\s+["'][^"']*["'])?\s*\)/g;
 
 /**
  * The memos a body quotes, in reading order, deduplicated and capped. Only the
@@ -61,18 +64,15 @@ function MemoQuoteCard({ id }: { id: string }) {
   if (!data?.memo || !snippet) return null;
 
   return (
-    <figure className="rounded-md border-l-2 border-brand-500/40 bg-muted/40 py-1.5 pl-2.5 pr-2">
+    <figure className="memo-quote-card">
       <Link
-        className="font-mono text-[11px] text-brand-600 hover:underline dark:text-brand-400"
         onClick={(event) => event.stopPropagation()}
         params={{ memoId: id }}
         to="/memo/$memoId"
       >
         ID.{id}
       </Link>
-      <blockquote className="mt-0.5 whitespace-pre-line text-sm leading-6 text-muted-foreground">
-        {snippet}
-      </blockquote>
+      <blockquote className="whitespace-pre-line">{snippet}</blockquote>
     </figure>
   );
 }
@@ -92,7 +92,9 @@ export function MemoQuoteCards({
 }) {
   if (ids.length === 0) return null;
   return (
-    <div className={cn("mt-3 flex flex-col gap-1.5", className)}>
+    // No gap: the card's own margin sets the rhythm, matching the blog where
+    // one blockquote's 6px margin is all that separates it from the next.
+    <div className={cn("mt-0 flex flex-col", className)}>
       {ids.map((id) => (
         <MemoQuoteCard id={id} key={id} />
       ))}

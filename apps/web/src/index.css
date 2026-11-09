@@ -1004,6 +1004,60 @@ svg.lucide[stroke-width="2"] {
     line-height: var(--reading-leading);
   }
 
+  /* A quoted note repeated under the body that cites it. The blog draws only a
+     24px corner bracket with two hairlines instead of a filled panel: the quote
+     is an aside to the sentence, not a second card competing with it. */
+  .memo-quote-card {
+    --quote-rule: color-mix(in oklch, var(--brand-500) 62%, transparent);
+    margin: 6px 0 2px;
+    padding: 2px 0 2px 14px;
+    background:
+      linear-gradient(var(--quote-rule), var(--quote-rule)) left top / 24px 1px
+        no-repeat,
+      linear-gradient(var(--quote-rule), var(--quote-rule)) left top / 1px 24px
+        no-repeat;
+    color: var(--muted-foreground);
+    font-size: 0.95em;
+    font-style: italic;
+    line-height: 1.65;
+  }
+
+  /* The card borrows a <blockquote> for the quoted text, but prose blockquotes
+     already carry a left rule and indent; reset both so only the corner
+     bracket above draws. The extra class outranks `.memo-markdown blockquote`,
+     which is declared further down the sheet. */
+  .memo-markdown .memo-quote-card blockquote {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .memo-quote-card a {
+    color: var(--brand-600);
+    font-style: normal;
+    text-decoration: none;
+  }
+
+  .memo-quote-card a:hover {
+    text-decoration: underline;
+  }
+
+  /* The inline `[ID.1234](/m/1234/)` mark: a superscript index pointing at the
+     card below, so the prose reads without the raw number in it. */
+  .memo-quote-mark {
+    padding: 0 0.1em;
+    color: var(--brand-600);
+    font-size: 0.72em;
+    font-style: normal;
+    text-decoration: none;
+    vertical-align: super;
+    line-height: 0;
+  }
+
+  .memo-quote-mark:hover {
+    text-decoration: underline;
+  }
+
   /* The settings surface keeps the type size the app shipped with while the
      reader drags the size slider. Without this the whole sheet grows under the
      pointer and slides the controls out from under the drag, and a settings
