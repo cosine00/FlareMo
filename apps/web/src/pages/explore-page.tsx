@@ -110,6 +110,11 @@ export function ExplorePage() {
             <LazyMemoContent
               className="reading-text [&_img]:rounded-lg"
               content={memo.content}
+              // The public face of the journal reads like the blog: a
+              // `[ID.1234](/m/1234/)` reference becomes a superscript index with
+              // the referenced note repeated below it, instead of leaving the
+              // raw number sitting in the sentence.
+              quotes
             />
             {memo.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">

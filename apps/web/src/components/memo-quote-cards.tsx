@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { getMemoContext } from "@/api";
+import { getPublicMemo } from "@/api";
 import { cn } from "@/lib/utils";
 
 /** Same ceiling as the blog: more cards than this and the note drowns. */
@@ -54,15 +54,15 @@ function snippetOf(markdown: string): string {
 
 function MemoQuoteCard({ id }: { id: string }) {
   const { data } = useQuery({
-    queryKey: ["memo-quote", id],
-    queryFn: () => getMemoContext(id),
+    queryKey: ["public-memo", id],
+    queryFn: () => getPublicMemo(id),
     retry: false,
     staleTime: 5 * 60_000,
   });
-  const snippet = data?.memo ? snippetOf(data.memo.content) : "";
+  const snippet = data?.content ? snippetOf(data.content) : "";
   // Deleted, private, or still loading: the inline link above already carries
   // the reference, so an empty card adds nothing.
-  if (!data?.memo || !snippet) return null;
+  if (!snippet) return null;
 
   return (
     <figure className="memo-quote-card">

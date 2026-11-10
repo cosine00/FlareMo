@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { listPublicTimeline } from "./public-timeline";
+import { getPublicMemo, listPublicTimeline } from "./public-timeline";
 
 const realFetch = globalThis.fetch;
 
@@ -78,5 +78,48 @@ describe("listPublicTimeline", () => {
     await expect(listPublicTimeline()).rejects.toThrow(
       "public timeline unavailable (500)",
     );
+  });
+});
+
+describe("getPublicMemo", () => {
+  it("reads one note off the anonymous surface, without the auth event", async () => {
+    const fetchMock = stubFetch({
+      ok: true,
+      json: async () => ({ name: "memos/1266", content: "被引用的正文" }),
+    });
+
+    await expect(getPublicMemo("1266")).resolves.toEqual({
+      content: "被引用的正文",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe("/api/v1/memos/1266");
+    expect(init?.headers).toEqual({ accept: "application/json" });
+  });
+
+  it("accepts the resource-name form the timeline hands out", async () => {
+    const fetchMock = stubFetch({
+      ok: true,
+      json: async () => ({ content: "正文" }),
+    });
+
+    await getPublicMemo("memos/1266");
+
+    const [url] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe("/api/v1/memos/1266");
+  });
+
+  it("returns null for a note the viewer cannot read", async () => {
+    // A quote may point at a deleted or private note; the card has to vanish
+    // instead of rendering an empty bracket.
+    stubFetch({ ok: false, status: 404 });
+
+    await expect(getPublicMemo("999")).resolves.toBeNull();
+  });
+
+  it("returns null when the payload has no text", async () => {
+    stubFetch({ ok: true, json: async () => ({ name: "memos/1" }) });
+
+    await expect(getPublicMemo("1")).resolves.toBeNull();
   });
 });
