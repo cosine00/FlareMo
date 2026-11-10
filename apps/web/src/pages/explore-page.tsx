@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { listPublicTimeline } from "@/api";
+import { useMemo } from "react";
+import { listPublicTimeline, type PublicTimelineMemo } from "@/api";
 import { authClient } from "@/auth-client";
 import { FlareMoLogo } from "@/components/flaremo-logo";
 import { LazyMemoContent } from "@/components/lazy-memo-content";
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n";
-import { formatMemoTime } from "@/lib/memo";
+import { formatMemoTime, unspokenTags } from "@/lib/memo";
 
 /**
  * The anonymous face of the instance: a timeline of every public memo, the way
@@ -100,35 +101,7 @@ export function ExplorePage() {
         )}
 
         {memos.map((memo) => (
-          <article
-            className="flex flex-col gap-3 rounded-xl border bg-card p-4"
-            key={memo.name}
-          >
-            <time className="text-xs text-muted-foreground">
-              {formatMemoTime(memo.createTime, locale)}
-            </time>
-            <LazyMemoContent
-              className="reading-text [&_img]:rounded-lg"
-              content={memo.content}
-              // The public face of the journal reads like the blog: a
-              // `[ID.1234](/m/1234/)` reference becomes a superscript index with
-              // the referenced note repeated below it, instead of leaving the
-              // raw number sitting in the sentence.
-              quotes
-            />
-            {memo.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {memo.tags.map((tag) => (
-                  <span
-                    className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                    key={tag}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </article>
+          <PublicMemoArticle key={memo.name} locale={locale} memo={memo} />
         ))}
 
         {memos.length > 0 && (
@@ -153,5 +126,53 @@ export function ExplorePage() {
         )}
       </main>
     </div>
+  );
+}
+
+/**
+ * One public note. The body draws its own `#tags` as chips where they stand, so
+ * a footer row repeating the note's tag list would show the same tag twice —
+ * only tags the text never spells out (set by an API client or an import) get
+ * a chip of their own, the same rule the signed-in timeline follows.
+ */
+function PublicMemoArticle({
+  locale,
+  memo,
+}: {
+  locale: string;
+  memo: PublicTimelineMemo;
+}) {
+  const footerTags = useMemo(
+    () => unspokenTags(memo.content, memo.tags),
+    [memo.content, memo.tags],
+  );
+
+  return (
+    <article className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+      <time className="text-xs text-muted-foreground">
+        {formatMemoTime(memo.createTime, locale)}
+      </time>
+      <LazyMemoContent
+        className="reading-text [&_img]:rounded-lg"
+        content={memo.content}
+        // The public face of the journal reads like the blog: a
+        // `[ID.1234](/m/1234/)` reference becomes a superscript index with the
+        // referenced note repeated below it, instead of leaving the raw number
+        // sitting in the sentence.
+        quotes
+      />
+      {footerTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {footerTags.map((tag) => (
+            <span
+              className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+              key={tag}
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+    </article>
   );
 }

@@ -24,6 +24,20 @@ export function extractTags(content: string) {
 }
 
 /**
+ * The tags a note's text never spells out.
+ *
+ * A `#tag` written in the body already renders as a chip where it stands, so
+ * any surface that also repeats the note's tag list must drop those first —
+ * otherwise the same tag appears twice on one card (the explore page shipped
+ * exactly that). Tags set by an API client or an import, which the body never
+ * mentions, still need the footer chip.
+ */
+export function unspokenTags(content: string, tags: readonly string[]) {
+  const inText = new Set(extractTags(content).map((tag) => tag.toLocaleLowerCase()));
+  return tags.filter((tag) => !inText.has(tag.toLocaleLowerCase()));
+}
+
+/**
  * Replace fenced code blocks and inline code spans with spaces (newlines are
  * kept) so tag boundaries match on the prose that remains. Mirrors the
  * literal-segment rules in `packages/domain/src/tags.ts`.

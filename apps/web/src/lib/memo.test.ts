@@ -4,6 +4,7 @@ import {
   formatMemoRelativeTime,
   formatMemoTime,
   memoTitle,
+  unspokenTags,
 } from "./memo";
 
 // A fixed locale keeps the assertions about the formatter's decision (is the
@@ -92,6 +93,34 @@ describe("extractTags", () => {
 
   it("deduplicates repeated tags", () => {
     expect(extractTags("#a #a #b/a")).toEqual(["a", "b/a"]);
+  });
+});
+
+describe("unspokenTags", () => {
+  it("drops the tags the body already renders where they stand", () => {
+    // The explore page repeated `#投机` under a body that ended with the very
+    // same chip, so one note showed its tag twice.
+    expect(unspokenTags("两个标的：02888 和 09880。 #投机", ["投机"])).toEqual([]);
+  });
+
+  it("keeps tags the text never mentions", () => {
+    // An API client or an import can set tags the body does not spell out;
+    // those still need a footer chip or they would vanish.
+    expect(unspokenTags("随手一记，没有标签。", ["读书"])).toEqual(["读书"]);
+  });
+
+  it("matches case-insensitively", () => {
+    expect(unspokenTags("读 #Reading 笔记", ["reading", "读书"])).toEqual([
+      "读书",
+    ]);
+  });
+
+  it("leaves tags inside code alone as unspoken", () => {
+    // `#include` in a fence is not a tag, so a real tag of that name must not
+    // be swallowed by the literal text.
+    expect(unspokenTags("```c\n#include <stdio.h>\n```", ["include"])).toEqual([
+      "include",
+    ]);
   });
 });
 

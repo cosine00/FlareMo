@@ -12,7 +12,7 @@ import {
   createImageDimensionResolver,
   filterUnreferencedAttachments,
 } from "@/lib/attachment-refs";
-import { extractTags } from "@/lib/memo";
+import { extractTags, unspokenTags } from "@/lib/memo";
 import { countTaskItems } from "@/lib/memo-tasks";
 import { cn } from "@/lib/utils";
 import { stateLabel } from "./memo-card-badges";
@@ -68,12 +68,10 @@ export function MemoCardBody({
   // Tags written in the text render as chips where they stand; the footer
   // only carries tags the text does not spell out (set by an API client or
   // an import), so nothing shows twice.
-  const footerTags = useMemo(() => {
-    const inText = new Set(
-      extractTags(memo.content).map((tag) => tag.toLocaleLowerCase()),
-    );
-    return tags.filter((tag) => !inText.has(tag.toLocaleLowerCase()));
-  }, [tags, memo.content]);
+  const footerTags = useMemo(
+    () => unspokenTags(memo.content, tags),
+    [tags, memo.content],
+  );
   // Body-referenced images render inline; the gallery keeps only the rest.
   const galleryAttachments = useMemo(
     () => filterUnreferencedAttachments(attachments, memo.content),
