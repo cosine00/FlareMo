@@ -79,6 +79,14 @@ export function MemoCardHeader({
             </span>
             <span className="[grid-area:stack] opacity-0 transition-opacity duration-150 group-hover:opacity-100 whitespace-nowrap">
               {formatMemoTime(memo.display_time, locale)}
+              {/* The reference other notes cite this one by. It rides along
+                  with the absolute instant, so a `[ID.…](/m/…)` can be written
+                  without a trip to the detail page. Hidden on touch widths:
+                  there is no hover to reveal it, and the row would only get
+                  tighter. */}
+              <span className="ml-2 hidden tabular-nums sm:inline">
+                ID.{id}
+              </span>
             </span>
           </span>
           {/* Author belongs to the spaces shared with other people: a
