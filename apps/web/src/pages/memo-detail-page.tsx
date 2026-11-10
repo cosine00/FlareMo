@@ -231,7 +231,11 @@ function MemoDetail({
             {formatMemoTime(context.memo.display_time, locale)}
             {context.memo.creator_name ? ` · ${context.memo.creator_name}` : ""}
           </CardTitle>
-          <div className="flex flex-wrap gap-2">
+          {/* The badges are 20px and the ghost button is 28px tall. Without
+              `items-center` the shorter badge pins to the line's top edge —
+              stretch leaves a fixed height alone — so the visibility chip
+              floats a few pixels above the timestamp on the other side. */}
+          <div className="flex flex-wrap items-center gap-2">
             {context.memo.pinned && <Badge>{t("memo.pinnedBadge")}</Badge>}
             <Badge variant="outline">
               {t(`visibility.${context.memo.visibility}`)}
