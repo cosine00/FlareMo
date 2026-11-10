@@ -473,6 +473,7 @@ const messages = {
   "explore.loadFailed": "노트를 불러오지 못했습니다",
   "share.unavailableDescription":
     "링크가 만료되었거나 취소되었거나, 노트가 더 이상 공개되지 않을 수 있습니다.",
+  "memo.quoteMarkAria": "{index}번째 인용",
   "memo.visibilityLabel": "공개 범위",
   "memo.visibilityAndShare": "공개 범위 및 공유",
   "memo.visibilityDialogDescription":

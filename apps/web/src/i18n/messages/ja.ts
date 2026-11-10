@@ -475,6 +475,7 @@ const messages = {
   "explore.loadFailed": "読み込みに失敗しました",
   "share.unavailableDescription":
     "リンクが期限切れ・取り消されたか、ノートが公開でなくなった可能性があります。",
+  "memo.quoteMarkAria": "{index} 番目の引用",
   "memo.visibilityLabel": "公開範囲",
   "memo.visibilityAndShare": "公開範囲と共有",
   "memo.visibilityDialogDescription":

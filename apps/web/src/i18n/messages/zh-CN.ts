@@ -437,6 +437,7 @@ const messages = {
   "explore.loadFailed": "加载失败",
   "share.unavailableDescription":
     "链接可能已过期、被撤销或对应记录不可公开访问。",
+  "memo.quoteMarkAria": "引用第 {index} 条",
   "memo.visibilityLabel": "可见性",
   "memo.visibilityAndShare": "可见性与分享",
   "memo.visibilityDialogDescription": "管理此条记录的访问权限与公开链接。",

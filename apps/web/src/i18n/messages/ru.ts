@@ -480,6 +480,7 @@ const messages = {
   "explore.loadFailed": "Не удалось загрузить заметки",
   "share.unavailableDescription":
     "Ссылка могла истечь, быть отозванной или указывать на заметку, которая больше не публична.",
+  "memo.quoteMarkAria": "Ссылка {index}",
   "memo.visibilityLabel": "Доступ",
   "memo.visibilityAndShare": "Видимость и доступ",
   "memo.visibilityDialogDescription":

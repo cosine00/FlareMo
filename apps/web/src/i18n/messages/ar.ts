@@ -469,6 +469,7 @@ const messages = {
   "explore.loadFailed": "تعذر تحميل الملاحظات",
   "share.unavailableDescription":
     "قد يكون الرابط منتهيًا أو ملغى أو يشير إلى ملاحظة لم تعد عامة.",
+  "memo.quoteMarkAria": "مرجع {index}",
   "memo.visibilityLabel": "إمكانية الظهور",
   "memo.visibilityAndShare": "مستوى الرؤية والمشاركة",
   "memo.visibilityDialogDescription":

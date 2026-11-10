@@ -68,12 +68,12 @@ describe("quoteIdsIn", () => {
 });
 
 describe("reference marks", () => {
-  it("replaces the raw ID in the prose with a superscript index", () => {
+  it("replaces the raw ID in the prose with a single beak", () => {
     const html = render(
       <MemoContent content={"卖出一半 O9880 [ID.12](/m/12/)。"} quotes />,
     );
     expect(html).toContain('class="memo-quote-mark"');
-    expect(html).toContain(">1</a>");
+    expect(html).toContain('viewBox="0 0 12 8"');
     // 句子里不再出现原始编号；卡片此时还没取到数据，所以整段都没有 ID.12。
     expect(html).not.toContain("ID.12");
   });
@@ -87,16 +87,26 @@ describe("reference marks", () => {
       />,
     );
     expect(html).toContain('class="memo-quote-mark"');
-    expect(html).toContain(">1</a>");
+    expect(html).toContain('viewBox="0 0 12 8"');
     expect(html).not.toContain("ID.1234");
   });
 
-  it("numbers several references in the order the cards appear", () => {
+  it("adds a beak per reference so each mark matches its card", () => {
     const html = render(
       <MemoContent content={"[ID.5](/m/5/) 与 [ID.8](/m/8/)"} quotes />,
     );
-    expect(html).toContain(">1</a>");
-    expect(html).toContain(">2</a>");
+    // 峰数写进 viewBox：一峰 12 宽，两峰 21.2，三峰 30.4，高度始终是 8。
+    expect(html).toContain('viewBox="0 0 12 8"');
+    expect(html).toContain('viewBox="0 0 21.2 8"');
+  });
+
+  it("repeats a reference without adding a beak", () => {
+    // 同一条被引两次时只对应一张卡片，两处角标都该是单峰。
+    const html = render(
+      <MemoContent content={"[ID.5](/m/5/) 又说 [ID.5](/m/5/)"} quotes />,
+    );
+    expect(html.match(/viewBox="0 0 12 8"/g)).toHaveLength(2);
+    expect(html).not.toContain("21.2");
   });
 
   it("leaves the plain link alone when the cards are off", () => {

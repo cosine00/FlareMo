@@ -479,6 +479,7 @@ const messages = {
   "explore.loadFailed": "Could not load notes",
   "share.unavailableDescription":
     "The link may have expired, been revoked, or point to a note that is no longer public.",
+  "memo.quoteMarkAria": "Reference {index}",
   "memo.visibilityLabel": "Visibility",
   "memo.visibilityAndShare": "Visibility & Sharing",
   "memo.visibilityDialogDescription":

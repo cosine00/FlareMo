@@ -1042,20 +1042,40 @@ svg.lucide[stroke-width="2"] {
     text-decoration: underline;
   }
 
-  /* The inline `[ID.1234](/m/1234/)` mark: a superscript index pointing at the
-     card below, so the prose reads without the raw number in it. */
-  .memo-quote-mark {
-    padding: 0 0.1em;
+  /* The inline `[ID.1234](/m/1234/)` mark: a small `^` pointing at the card
+     below, so the prose reads without the raw number in it. Drawn rather than
+     typed — a glyph's size and baseline come from the reader's font, while
+     this keeps one height across every text size. The box widens with the
+     beak count and the height stays put, so three beaks read as a single mark
+     instead of three marks in a row. */
+  /* `.memo-markdown a` styles every prose link with an underline, and it wins
+     on specificity over a bare class — hence the compound selector here. The
+     mark is punctuation, not a link to read as one. */
+  .memo-markdown a.memo-quote-mark {
+    display: inline-block;
+    margin-inline-start: 0.1em;
     color: var(--brand-600);
-    font-size: 0.72em;
-    font-style: normal;
-    text-decoration: none;
-    vertical-align: super;
     line-height: 0;
+    text-decoration: none;
+    vertical-align: 0.42em;
+    opacity: 0.9;
+    transition:
+      opacity 0.16s ease,
+      transform 0.16s ease;
   }
 
-  .memo-quote-mark:hover {
-    text-decoration: underline;
+  /* No width here: it comes from the viewBox ratio, which is what makes the
+     mark longer for two and three references without redrawing the beaks. */
+  .memo-quote-mark svg {
+    display: block;
+    width: auto;
+    height: 0.36em;
+  }
+
+  .memo-markdown a.memo-quote-mark:hover {
+    opacity: 1;
+    text-decoration: none;
+    transform: translateY(-1px);
   }
 
   /* The settings surface keeps the type size the app shipped with while the

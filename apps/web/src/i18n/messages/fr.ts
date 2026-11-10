@@ -486,6 +486,7 @@ const messages = {
   "explore.loadFailed": "Impossible de charger les notes",
   "share.unavailableDescription":
     "Le lien a peut-être expiré, été révoqué, ou pointe vers une note qui n'est plus publique.",
+  "memo.quoteMarkAria": "Référence {index}",
   "memo.visibilityLabel": "Visibilité",
   "memo.visibilityAndShare": "Visibilité et partage",
   "memo.visibilityDialogDescription":

@@ -21,6 +21,7 @@ import { ImageLightbox } from "@/components/image-lightbox";
 import { MemoImageGallery } from "@/components/memo-image-gallery";
 import { MemoImageIcon } from "@/components/memo-image-icon";
 import { MemoQuoteCards, quoteIdsIn } from "@/components/memo-quote-cards";
+import { MemoQuoteMark } from "@/components/memo-quote-mark";
 import { useI18n } from "@/i18n";
 import { createSlugger } from "@/lib/markdown-outline";
 import { markdownImages } from "@/lib/memo-media";
@@ -467,9 +468,10 @@ export const MemoContent = memo(function MemoContent({
               );
             if (memoRoute) {
               const memoId = memoRoute[1];
-              // When the quote cards are on, the prose carries a superscript
-              // index instead of `ID.1234`: the number repeats what the card
-              // below already says, and in a sentence it reads as noise.
+              // When the quote cards are on, the prose carries a small mark
+              // instead of `ID.1234`: the number repeats what the card below
+              // already says, and in a sentence it reads as noise. The mark
+              // grows a beak per reference, same as the blog's.
               const quoteIndex = memoId ? quoteIds.indexOf(memoId) : -1;
               if (quoteIndex >= 0) {
                 return (
@@ -478,7 +480,7 @@ export const MemoContent = memo(function MemoContent({
                     params={{ memoId }}
                     to="/memo/$memoId"
                   >
-                    {quoteIndex + 1}
+                    <MemoQuoteMark index={quoteIndex} />
                   </Link>
                 );
               }

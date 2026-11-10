@@ -483,6 +483,7 @@ const messages = {
   "explore.loadFailed": "No se pudieron cargar las notas",
   "share.unavailableDescription":
     "El enlace pudo expirar, haberse revocado o apuntar a una nota que ya no es pública.",
+  "memo.quoteMarkAria": "Referencia {index}",
   "memo.visibilityLabel": "Visibilidad",
   "memo.visibilityAndShare": "Visibilidad y compartir",
   "memo.visibilityDialogDescription":
