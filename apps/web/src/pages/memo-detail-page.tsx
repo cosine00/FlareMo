@@ -254,7 +254,11 @@ function MemoDetail({
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="content">
-          <TabsList className="max-w-full overflow-x-auto">
+          {/* Four tabs rarely overflow, but Chinese labels wrap on a narrow
+              column; the list scrolls instead of stacking. `no-scrollbar`
+              hides the track — on Windows the native scrollbar's arrow buttons
+              sit inside the rounded pill and read as stray glyphs. */}
+          <TabsList className="no-scrollbar max-w-full overflow-x-auto">
             <TabsTrigger value="content">{t("detail.content")}</TabsTrigger>
             <TabsTrigger value="relations">
               {t("detail.relations")}
