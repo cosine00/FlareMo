@@ -24,6 +24,7 @@ import {
   getRequestContext,
   type HonoBindings,
 } from "../../context";
+import { cacheAnonymousResponse } from "../../http";
 import { hardDeleteMemoWithAttachments } from "../../memo-hard-delete";
 import { currentJsonError } from "../../memos-compat/current-errors";
 import { CompatValidationError } from "../../memos-compat/errors";
@@ -53,41 +54,62 @@ import {
   currentShareBodySchema,
 } from "./schemas";
 
+/**
+ * How long an anonymous memo list may be served from the edge cache. Every
+ * cached response is public-only and unauthenticated, so the worst case is a
+ * visitor seeing a new public memo up to a minute late; the author, whose
+ * request carries a session cookie, always reads live rows.
+ */
+const ANONYMOUS_LIST_TTL_SECONDS = 60;
+
 export function registerMemoRoutes(app: Hono<HonoBindings>) {
   app.get("/memos", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
       const context = await getOptionalRequestContext(c);
-      const result = await listMemosForViewer(
-        context.db,
-        context.user,
-        currentListQuery(c),
-        { celScanLimit: context.memoFilterScanLimit },
-      );
-      const attachments = await listAttachmentsForMemosForViewer(
-        context.db,
-        context.user,
-        result.memos.map((memo) => memo.id),
-      );
-      const byMemo = new Map<string, typeof attachments>();
-      for (const attachment of attachments) {
-        if (!attachment.memoId) continue;
-        const values = byMemo.get(attachment.memoId) ?? [];
-        values.push(attachment);
-        byMemo.set(attachment.memoId, values);
-      }
-      return c.json({
-        memos: await Promise.all(
-          result.memos.map(async (memo) =>
-            currentMemoToDto(memo, await resolveMemoCreator(context, memo), {
-              attachments: byMemo.get(memo.id) ?? [],
-            }),
+      const build = async () => {
+        const result = await listMemosForViewer(
+          context.db,
+          context.user,
+          currentListQuery(c),
+          { celScanLimit: context.memoFilterScanLimit },
+        );
+        const attachments = await listAttachmentsForMemosForViewer(
+          context.db,
+          context.user,
+          result.memos.map((memo) => memo.id),
+        );
+        const byMemo = new Map<string, typeof attachments>();
+        for (const attachment of attachments) {
+          if (!attachment.memoId) continue;
+          const values = byMemo.get(attachment.memoId) ?? [];
+          values.push(attachment);
+          byMemo.set(attachment.memoId, values);
+        }
+        return c.json({
+          memos: await Promise.all(
+            result.memos.map(async (memo) =>
+              currentMemoToDto(memo, await resolveMemoCreator(context, memo), {
+                attachments: byMemo.get(memo.id) ?? [],
+              }),
+            ),
           ),
-        ),
-        ...(result.nextPageToken
-          ? { nextPageToken: result.nextPageToken }
-          : {}),
-      });
+          ...(result.nextPageToken
+            ? { nextPageToken: result.nextPageToken }
+            : {}),
+        });
+      };
+      // Only the anonymous view is cacheable: a signed-in reader may see
+      // private or team rows, and the helper also re-checks the request
+      // headers so a cookie-bearing request never lands in a shared entry.
+      if (!context.user) {
+        return await cacheAnonymousResponse(
+          c,
+          ANONYMOUS_LIST_TTL_SECONDS,
+          build,
+        );
+      }
+      return await build();
     } catch (error) {
       return currentJsonError(c, error);
     }

@@ -380,7 +380,22 @@ export async function listAttachmentsForMemosForViewer(
     const allowedMemoIds = db
       .select({ id: memos.id })
       .from(memos)
-      .where(and(memoReadScope(user), inArray(memos.id, idChunk)));
+      .where(
+        and(
+          // The read scope is deliberately wrapped in a CASE instead of being
+          // ANDed directly. ANDed, SQLite cannot use the id list as a seek: it
+          // estimates `visibility = 'public'` (or the owner's MULTI-INDEX OR)
+          // as cheaper than one probe per id and reads the *entire* memos
+          // corpus for every page — 1200+ rows_read per hydration on a 1.2k
+          // instance, with an empty attachments table. A CASE is not
+          // indexable, so the planner is left with the id list, which is a
+          // covering probe on the primary key. The predicate itself is
+          // unchanged: this is the same `memoReadScope` expression, and an id
+          // the viewer may not read stays out of the result either way.
+          sql`(CASE WHEN ${memoReadScope(user)} THEN 1 ELSE 0 END) = 1`,
+          inArray(memos.id, idChunk),
+        ),
+      );
     rows.push(
       ...(await db
         .select()

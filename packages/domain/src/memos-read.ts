@@ -92,7 +92,7 @@ export async function listMemosForViewer(
   const orderColumn = query.order_by.startsWith("updated_at")
     ? memos.updatedAt
     : memos.createdAt;
-  const filters = [memoReadScope(user)];
+  const filters: SQL[] = [];
   const authorFilter = authorScope(user, query.author);
   if (authorFilter) filters.push(authorFilter);
   const spaceFilter = spaceScope(user, query.space);
@@ -212,15 +212,14 @@ export async function listMemosForViewer(
     if (cursorFilter) filters.push(cursorFilter);
   }
 
-  const orderedQuery = db
-    .select()
-    .from(memos)
-    .where(and(...filters.filter(Boolean)))
-    .orderBy(
-      desc(memos.pinned),
-      direction === "asc" ? asc(orderColumn) : desc(orderColumn),
-      direction === "asc" ? asc(memos.id) : desc(memos.id),
-    );
+  const orderBy = [
+    desc(memos.pinned),
+    direction === "asc" ? asc(orderColumn) : desc(orderColumn),
+    direction === "asc" ? asc(memos.id) : desc(memos.id),
+  ];
+  const orderColumnName = query.order_by.startsWith("updated_at")
+    ? "updated_at"
+    : "created_at";
   // Never hydrate an unbounded candidate set for a user-supplied expression.
   // If the bounded window contains a complete page plus a lookahead match,
   // the existing cursor safely resumes after that page. Otherwise require a
@@ -236,12 +235,8 @@ export async function listMemosForViewer(
     const probe = await db
       .select({ id: memos.id })
       .from(memos)
-      .where(and(...filters.filter(Boolean)))
-      .orderBy(
-        desc(memos.pinned),
-        direction === "asc" ? asc(orderColumn) : desc(orderColumn),
-        direction === "asc" ? asc(memos.id) : desc(memos.id),
-      )
+      .where(and(memoReadScope(user), ...filters.filter(Boolean)))
+      .orderBy(...orderBy)
       .limit(scanLimit + 1);
     if (probe.length > scanLimit && !likeScanFallback) {
       throw new ValidationError(
@@ -249,9 +244,62 @@ export async function listMemosForViewer(
       );
     }
   }
-  const candidates = await orderedQuery.limit(
-    jsScan ? scanLimit + 1 : query.page_size + 1,
-  );
+
+  // An active member's read scope is `own OR public`. An OR cannot be served
+  // by one ordered index: the planner reads both index ranges and then sorts
+  // every candidate, so a 21-row page on a 1.2k-memo instance read ~3.5k rows.
+  // Splitting it into two already-ordered branches and merging them keeps the
+  // page index-shaped. UNION (not UNION ALL) is required: a member's own
+  // public memos match both branches and must not be returned twice. Each
+  // branch is limited to the page window, and the merge of two individually
+  // sorted prefixes is exactly the sorted prefix of the union, so ordering,
+  // cursoring and lookahead behave as they did for the single statement.
+  //
+  // Team scopes add a third clause this split does not model, and JS-scanned
+  // filters carry a per-statement `scanLimit` window, so both keep the
+  // single-statement path.
+  const canSplitScope =
+    user?.status === "active" && !user.teamOrganizationId && !jsScan;
+  let candidates: MemoRow[];
+  if (canSplitScope && user) {
+    const branchLimit = query.page_size + 1;
+    const sharedFilters = filters.filter(Boolean);
+    const ownPage = db
+      .select()
+      .from(memos)
+      .where(and(eq(memos.userId, user.id), ...sharedFilters))
+      .orderBy(...orderBy)
+      .limit(branchLimit)
+      .as("own_page");
+    const publicPage = db
+      .select()
+      .from(memos)
+      .where(
+        and(
+          eq(memos.visibility, "public"),
+          eq(memos.status, "normal"),
+          ...sharedFilters,
+        ),
+      )
+      .orderBy(...orderBy)
+      .limit(branchLimit)
+      .as("public_page");
+    candidates = await db
+      .select()
+      .from(ownPage)
+      .union(db.select().from(publicPage))
+      .orderBy(
+        sql`pinned ${sql.raw(direction)}, ${sql.raw(orderColumnName)} ${sql.raw(direction)}, id ${sql.raw(direction)}`,
+      )
+      .limit(branchLimit);
+  } else {
+    candidates = await db
+      .select()
+      .from(memos)
+      .where(and(memoReadScope(user), ...filters.filter(Boolean)))
+      .orderBy(...orderBy)
+      .limit(jsScan ? scanLimit + 1 : query.page_size + 1);
+  }
   const rows =
     celFilter && !fullyPushedDown
       ? candidates.slice(0, scanLimit).filter((memo) => celFilter(memo, user))

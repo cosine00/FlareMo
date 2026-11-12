@@ -82,6 +82,17 @@ export const memos = sqliteTable(
     ),
     uniqueIndex("memos_user_client_id_idx").on(table.userId, table.clientId),
     index("memos_visibility_idx").on(table.visibility),
+    // Anonymous readers have no `user_id` to seek on, so every list page used
+    // `memos_visibility_idx` to read the whole public corpus and then sorted
+    // it in a temp b-tree — O(all public memos) per page, on every page. This
+    // index leads with the scope equality and then repeats the timeline's
+    // ORDER BY, so the planner can walk it backwards and stop after one page.
+    index("memos_visibility_pinned_created_id_idx").on(
+      table.visibility,
+      table.pinned,
+      table.createdAt,
+      table.id,
+    ),
     index("memos_team_visibility_status_idx").on(
       table.teamId,
       table.visibility,
