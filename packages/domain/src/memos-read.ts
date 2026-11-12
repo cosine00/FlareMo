@@ -20,6 +20,7 @@ import {
   type SQL,
   sql,
 } from "drizzle-orm";
+import { union } from "drizzle-orm/sqlite-core";
 import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import { NotFoundError, ValidationError } from "./errors";
 import { compileMemoFilter } from "./memo-filter";
@@ -43,6 +44,7 @@ import {
 import { normalizeMemoTags } from "./tags";
 import {
   authorScope,
+  memoReadBranches,
   memoReadScope,
   scopedReadScope,
   spaceScope,
@@ -92,7 +94,7 @@ export async function listMemosForViewer(
   const orderColumn = query.order_by.startsWith("updated_at")
     ? memos.updatedAt
     : memos.createdAt;
-  const filters = [memoReadScope(user)];
+  const filters: SQL[] = [];
   const authorFilter = authorScope(user, query.author);
   if (authorFilter) filters.push(authorFilter);
   const spaceFilter = spaceScope(user, query.space);
@@ -212,15 +214,14 @@ export async function listMemosForViewer(
     if (cursorFilter) filters.push(cursorFilter);
   }
 
-  const orderedQuery = db
-    .select()
-    .from(memos)
-    .where(and(...filters.filter(Boolean)))
-    .orderBy(
-      desc(memos.pinned),
-      direction === "asc" ? asc(orderColumn) : desc(orderColumn),
-      direction === "asc" ? asc(memos.id) : desc(memos.id),
-    );
+  const orderBy = [
+    desc(memos.pinned),
+    direction === "asc" ? asc(orderColumn) : desc(orderColumn),
+    direction === "asc" ? asc(memos.id) : desc(memos.id),
+  ];
+  const orderColumnName = query.order_by.startsWith("updated_at")
+    ? "updated_at"
+    : "created_at";
   // Never hydrate an unbounded candidate set for a user-supplied expression.
   // If the bounded window contains a complete page plus a lookahead match,
   // the existing cursor safely resumes after that page. Otherwise require a
@@ -236,12 +237,8 @@ export async function listMemosForViewer(
     const probe = await db
       .select({ id: memos.id })
       .from(memos)
-      .where(and(...filters.filter(Boolean)))
-      .orderBy(
-        desc(memos.pinned),
-        direction === "asc" ? asc(orderColumn) : desc(orderColumn),
-        direction === "asc" ? asc(memos.id) : desc(memos.id),
-      )
+      .where(and(memoReadScope(user), ...filters.filter(Boolean)))
+      .orderBy(...orderBy)
       .limit(scanLimit + 1);
     if (probe.length > scanLimit && !likeScanFallback) {
       throw new ValidationError(
@@ -249,9 +246,64 @@ export async function listMemosForViewer(
       );
     }
   }
-  const candidates = await orderedQuery.limit(
-    jsScan ? scanLimit + 1 : query.page_size + 1,
-  );
+
+  // An active member's read scope is an OR of independent branches: their own
+  // rows, everyone's public rows, and the team's rows when they belong to one.
+  // As a single OR the planner reads every matching row and sorts it in a temp
+  // b-tree, so a 21-row page on a 1.2k-memo instance read ~2.8k rows. Run as
+  // one ordered, limited query per branch and merged with UNION, each branch
+  // walks an index that already repeats the timeline order and stops at the
+  // page window.
+  //
+  // The merge is still the sorted prefix of the union: a row in the true top-k
+  // must sit inside the top-k of at least one branch it belongs to, so `k`
+  // rows per branch already contain it. UNION (not UNION ALL) drops the
+  // duplicates a member's own public or team rows would otherwise produce.
+  //
+  // The branches come from `memoReadBranches`, so this split cannot drift from
+  // the read boundary. JS-scanned filters carry a per-statement `scanLimit`
+  // window and keep the single-statement path.
+  const readBranches =
+    user?.status === "active" && !jsScan ? memoReadBranches(user) : null;
+  let candidates: MemoRow[];
+  if (readBranches) {
+    const branchLimit = query.page_size + 1;
+    const sharedFilters = filters.filter(Boolean);
+    // Each branch has to sit inside a subquery: a compound arm cannot carry
+    // its own LIMIT, so a bare `select … limit ? union select … limit ?` is a
+    // syntax error. Wrapping keeps every branch bounded to the page window,
+    // and the trailing ORDER BY only re-sorts the merged prefixes.
+    const branchQuery = (branch: SQL, index: number) =>
+      db.select().from(
+        db
+          .select()
+          .from(memos)
+          .where(and(branch, ...sharedFilters))
+          .orderBy(...orderBy)
+          .limit(branchLimit)
+          .as(`branch_${index}`),
+      );
+    const [ownBranch, sharedBranch, teamBranch] = readBranches;
+    const merged = teamBranch
+      ? union(
+          branchQuery(ownBranch, 0),
+          branchQuery(sharedBranch, 1),
+          branchQuery(teamBranch, 2),
+        )
+      : union(branchQuery(ownBranch, 0), branchQuery(sharedBranch, 1));
+    candidates = await merged
+      .orderBy(
+        sql`pinned ${sql.raw(direction)}, ${sql.raw(orderColumnName)} ${sql.raw(direction)}, id ${sql.raw(direction)}`,
+      )
+      .limit(branchLimit);
+  } else {
+    candidates = await db
+      .select()
+      .from(memos)
+      .where(and(memoReadScope(user), ...filters.filter(Boolean)))
+      .orderBy(...orderBy)
+      .limit(jsScan ? scanLimit + 1 : query.page_size + 1);
+  }
   const rows =
     celFilter && !fullyPushedDown
       ? candidates.slice(0, scanLimit).filter((memo) => celFilter(memo, user))

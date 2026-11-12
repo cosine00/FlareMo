@@ -57,6 +57,13 @@ export function registerMemoRoutes(app: Hono<HonoBindings>) {
   app.get("/memos", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
+      // Intentionally uncached, including the anonymous view. `caches.default`
+      // cannot be purged by tag or enumerated, so a memo that goes public ->
+      // private (or is deleted) would keep being served until the TTL ran out;
+      // measured before shipping, and the leak was real. Read cost is kept low
+      // in SQL instead — see `memos_visibility_pinned_created_id_idx` and the
+      // per-branch UNION in `listMemosForViewer`. Re-introducing a cache here
+      // needs a purge strategy first (a versioned key that every write bumps).
       const context = await getOptionalRequestContext(c);
       const result = await listMemosForViewer(
         context.db,

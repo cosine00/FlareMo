@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import type { FlareMoEnv } from "./env";
 import {
   dispatchMemoBlogSync,
+  memoBlogSyncTarget,
   shouldDispatchMemoBlogSync,
 } from "./memo-blog-sync";
-import type { FlareMoEnv } from "./env";
 
 function request(
   method: string,
@@ -176,8 +177,9 @@ describe("public Memo blog sync trigger", () => {
   });
 
   it("calls only the workflow dispatch endpoint and sends the configured ref", async () => {
-    const fetcher = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(null, { status: 204 }),
+    const fetcher = vi.fn(
+      async (_url: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(null, { status: 204 }),
     );
     const env = {
       FLAREMO_MEMO_SYNC_GITHUB_TOKEN: "github-token",
@@ -212,5 +214,128 @@ describe("public Memo blog sync trigger", () => {
     );
     expect(dispatched).toBe(false);
     expect(fetcher).not.toHaveBeenCalled();
+  });
+});
+
+describe("single-memo blog sync target", () => {
+  it("reads the memo id of a fresh create from the response body", async () => {
+    const target = await memoBlogSyncTarget(
+      request("POST", "/api/v1/memos"),
+      jsonResponse({ name: "memos/1276", visibility: "PUBLIC" }),
+    );
+    expect(target).toEqual({
+      action: "upsert",
+      kind: "create",
+      memoId: "1276",
+    });
+  });
+
+  it("reads the memo id from the path for edits, deletes and attachment rebinds", async () => {
+    expect(
+      await memoBlogSyncTarget(
+        request("PATCH", "/api/v1/memos/memos%2F1276"),
+        jsonResponse({ visibility: "PRIVATE" }),
+      ),
+    ).toEqual({ action: "upsert", kind: "update", memoId: "1276" });
+    expect(
+      await memoBlogSyncTarget(
+        request("DELETE", "/api/v1/memos/memos%2F1276"),
+        new Response(null, { status: 200 }),
+      ),
+    ).toEqual({ action: "remove", kind: "delete", memoId: "1276" });
+    expect(
+      await memoBlogSyncTarget(
+        request("PATCH", "/api/v1/memos/memos%2F1276/attachments", {
+          attachments: [],
+        }),
+        jsonResponse({ attachments: [] }),
+      ),
+    ).toEqual({ action: "upsert", kind: "memo-attachments", memoId: "1276" });
+    expect(
+      await memoBlogSyncTarget(
+        request("POST", "/api/v1/memos/memos%2F1276/revisions/restore"),
+        jsonResponse({ visibility: "PUBLIC" }),
+      ),
+    ).toEqual({ action: "upsert", kind: "restore", memoId: "1276" });
+  });
+
+  it("reads the parent memo of an attachment write from the response", async () => {
+    expect(
+      await memoBlogSyncTarget(
+        request("POST", "/api/v1/attachments"),
+        jsonResponse({ name: "attachments/a", memo: "memos/1276" }),
+      ),
+    ).toEqual({ action: "upsert", kind: "attachment-write", memoId: "1276" });
+  });
+
+  it("keeps the full pull when the id cannot be resolved", async () => {
+    // Binary Connect responses are protobuf: no id, but the projection may
+    // still have changed, so the run must widen back to a full pull.
+    expect(
+      await memoBlogSyncTarget(
+        request(
+          "POST",
+          "/memos.api.v1.MemoService/CreateMemo",
+          "binary payload",
+          "application/proto",
+        ),
+        new Response("binary response", {
+          status: 200,
+          headers: { "content-type": "application/proto" },
+        }),
+      ),
+    ).toEqual({ action: "upsert", kind: "connect-create" });
+    // An attachment delete never names the parent memo.
+    expect(
+      await memoBlogSyncTarget(
+        request("DELETE", "/api/v1/attachments/a"),
+        new Response(null, { status: 200 }),
+      ),
+    ).toEqual({ action: "remove", kind: "attachment-delete" });
+  });
+
+  it("sends the id and action as workflow inputs without any memo content", async () => {
+    const fetcher = vi.fn(
+      async (_url: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(null, { status: 204 }),
+    );
+    const env = {
+      FLAREMO_MEMO_SYNC_GITHUB_TOKEN: "github-token",
+    } as FlareMoEnv;
+    await dispatchMemoBlogSync(
+      env,
+      request("PATCH", "/api/v1/memos/memos%2F1276"),
+      jsonResponse({
+        name: "memos/1276",
+        content: "SECRET-BODY",
+        visibility: "PUBLIC",
+      }),
+      fetcher,
+    );
+    const [, init] = fetcher.mock.calls[0] ?? [];
+    const body = String(init?.body);
+    expect(JSON.parse(body)).toEqual({
+      ref: "master",
+      inputs: { memo_id: "1276", action: "upsert" },
+    });
+    expect(body).not.toContain("SECRET-BODY");
+  });
+
+  it("keeps a full pull when a create response cannot be parsed", async () => {
+    const fetcher = vi.fn(
+      async (_url: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(null, { status: 204 }),
+    );
+    const env = {
+      FLAREMO_MEMO_SYNC_GITHUB_TOKEN: "github-token",
+    } as FlareMoEnv;
+    await dispatchMemoBlogSync(
+      env,
+      request("POST", "/api/v1/memos"),
+      jsonResponse({ visibility: "PUBLIC" }),
+      fetcher,
+    );
+    const [, init] = fetcher.mock.calls[0] ?? [];
+    expect(JSON.parse(String(init?.body))).toEqual({ ref: "master" });
   });
 });

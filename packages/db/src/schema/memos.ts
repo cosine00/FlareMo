@@ -82,10 +82,30 @@ export const memos = sqliteTable(
     ),
     uniqueIndex("memos_user_client_id_idx").on(table.userId, table.clientId),
     index("memos_visibility_idx").on(table.visibility),
+    // Anonymous readers have no `user_id` to seek on, so every list page used
+    // `memos_visibility_idx` to read the whole public corpus and then sorted
+    // it in a temp b-tree — O(all public memos) per page, on every page. This
+    // index leads with the scope equality and then repeats the timeline's
+    // ORDER BY, so the planner can walk it backwards and stop after one page.
+    index("memos_visibility_pinned_created_id_idx").on(
+      table.visibility,
+      table.pinned,
+      table.createdAt,
+      table.id,
+    ),
     index("memos_team_visibility_status_idx").on(
       table.teamId,
       table.visibility,
       table.status,
+    ),
+    // Same shape for the team branch of the read scope: `team_id` equality
+    // first, then the timeline order, so a team page stops after one window
+    // instead of sorting every team row.
+    index("memos_team_pinned_created_id_idx").on(
+      table.teamId,
+      table.pinned,
+      table.createdAt,
+      table.id,
     ),
     // The daily recycle-bin sweep filters `status = 'trashed' and
     // deleted_at < cutoff`; keep it off a full table scan (mirrors
