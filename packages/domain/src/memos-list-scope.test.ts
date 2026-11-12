@@ -239,6 +239,26 @@ describe("listMemosForViewer team-scope split", () => {
     expect(new Set(seen).size).toBe(seen.length);
   });
 
+  it("pushes a case-insensitive visibility filter onto the branch", async () => {
+    // The Memos clients send the enum in upper case. The pushdown folds the
+    // literal rather than the column, so the SQL still matches the lower-case
+    // rows — and stays a plain equality the timeline index can serve.
+    const page = await listMemosForViewer(db, owner, {
+      page_size: 100,
+      order_by: "created_at desc",
+      include_deleted: false,
+      filter: 'visibility == "PUBLIC"',
+    });
+    const ids = page.memos.map((memo) => memo.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.every((id) => id.startsWith("memos/"))).toBe(true);
+    const expected = (await db.select().from(memos))
+      .filter((memo) => memo.visibility === "public")
+      .sort(timelineOrder)
+      .map((memo) => memo.id);
+    expect(ids).toEqual(expected);
+  });
+
   it("honours a tag filter inside every branch", async () => {
     const tagged = await createMemo(db, member, {
       content: "team tagged #团队",

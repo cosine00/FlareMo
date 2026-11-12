@@ -377,7 +377,8 @@ describe("Memos CEL filter SQL pushdown completeness", () => {
     );
     expect(filter?.completeInSql).toBe(true);
     for (const candidate of [memo, { ...memo, pinned: false }]) {
-      // SQL `upper(status) = 'NORMAL'` and the JS evaluator agree per row.
+      // SQL compares the folded literal against the lower-case column and the
+      // JS evaluator folds the row, so both agree per row.
       expect(filter?.(candidate as MemoRow, user)).toBe(
         (candidate as MemoRow).pinned &&
           candidate.status.toUpperCase() === "NORMAL",

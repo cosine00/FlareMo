@@ -1,6 +1,6 @@
 import { memos } from "@flaremo/db";
 import type { SQL } from "drizzle-orm";
-import { and, eq, or, sql } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { binaryAstArgs, isAstNode } from "./ast-utils";
 
 /**
@@ -58,11 +58,23 @@ export function memoFilterSqlPredicate(value: unknown): SQL | undefined {
     return eq(memos.pinned, literal.args);
   }
   if (typeof literal.args !== "string") return undefined;
+  // Both enums are lowercase on disk and validated on write, so folding the
+  // literal (not the column) keeps the case-insensitive match a client expects
+  // from `visibility == "PUBLIC"` while leaving the column bare. Wrapping the
+  // column in upper() made the planner abandon the ordered timeline indexes
+  // and re-sort the whole branch: a filtered list page then read ~1.8k rows
+  // instead of ~125.
   if (field.args === "state") {
-    return eq(sql`upper(${memos.status})`, literal.args);
+    return eq(
+      memos.status,
+      literal.args.toLowerCase() as typeof memos.status._.data,
+    );
   }
   if (field.args === "visibility") {
-    return eq(sql`upper(${memos.visibility})`, literal.args);
+    return eq(
+      memos.visibility,
+      literal.args.toLowerCase() as typeof memos.visibility._.data,
+    );
   }
   return undefined;
 }
