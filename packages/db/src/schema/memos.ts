@@ -98,6 +98,15 @@ export const memos = sqliteTable(
       table.visibility,
       table.status,
     ),
+    // Same shape for the team branch of the read scope: `team_id` equality
+    // first, then the timeline order, so a team page stops after one window
+    // instead of sorting every team row.
+    index("memos_team_pinned_created_id_idx").on(
+      table.teamId,
+      table.pinned,
+      table.createdAt,
+      table.id,
+    ),
     // The daily recycle-bin sweep filters `status = 'trashed' and
     // deleted_at < cutoff`; keep it off a full table scan (mirrors
     // attachments_cleanup_idx).

@@ -141,9 +141,9 @@ describe("listMemosForViewer own-or-public split", () => {
     expect(new Set(seen).size).toBe(seen.length);
   });
 
-  it("keeps the team scope on the single-statement path intact", async () => {
-    // The owner has a team organization here, so the split is skipped and the
-    // original OR predicate answers. Blog-team rows must still be reachable.
+  it("keeps team rows reachable through the three-branch split", async () => {
+    // The owner is a team admin, so the scope also carries the team branch:
+    // `team_id = org AND visibility IN (protected, public)`.
     const teamMemo = await createMemo(db, member, {
       content: "team only",
       visibility: "protected",
@@ -157,6 +157,103 @@ describe("listMemosForViewer own-or-public split", () => {
     const ids = page.memos.map((memo) => memo.id);
     expect(ids).toContain(teamMemo.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("listMemosForViewer team-scope split", () => {
+  function expectedForTeam(viewer: TeamViewer, rows: MemoRow[]): MemoRow[] {
+    const org = viewer.teamOrganizationId;
+    return rows
+      .filter(
+        (memo) =>
+          memo.userId === viewer.id ||
+          (memo.visibility === "public" && memo.status === "normal") ||
+          (org !== null &&
+            org !== undefined &&
+            memo.teamId === org &&
+            (memo.visibility === "protected" || memo.visibility === "public")),
+      )
+      .sort(timelineOrder);
+  }
+
+  beforeEach(async () => {
+    // Own rows in both visibilities, a teammate's public row, and a teammate's
+    // protected team row: the three branches overlap on the owner's own public
+    // memos, which is exactly where a UNION ALL would double them.
+    for (let index = 0; index < 5; index += 1) {
+      await createMemo(db, owner, {
+        content: `owner public ${index}`,
+        visibility: "public",
+        source: "web",
+      });
+      await createMemo(db, owner, {
+        content: `owner private ${index}`,
+        visibility: "private",
+        source: "web",
+      });
+    }
+    await createMemo(db, member, {
+      content: "member public",
+      visibility: "public",
+      source: "web",
+    });
+    for (let index = 0; index < 3; index += 1) {
+      await createMemo(db, member, {
+        content: `team protected ${index}`,
+        visibility: "protected",
+        source: "web",
+      });
+    }
+  });
+
+  it("returns the whole team scope once each, in timeline order", async () => {
+    const rows = await db.select().from(memos);
+    const expected = expectedForTeam(owner, rows);
+    const page = await listMemosForViewer(db, owner, {
+      page_size: 100,
+      order_by: "created_at desc",
+      include_deleted: false,
+    });
+    const ids = page.memos.map((memo) => memo.id);
+    expect(ids).toEqual(expected.map((memo) => memo.id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("paginates the team scope without dropping or repeating a row", async () => {
+    const rows = await db.select().from(memos);
+    const expected = expectedForTeam(owner, rows);
+    const seen: string[] = [];
+    let pageToken: string | undefined;
+    for (let guard = 0; guard < 20; guard += 1) {
+      const page = await listMemosForViewer(db, owner, {
+        page_size: 3,
+        order_by: "created_at desc",
+        include_deleted: false,
+        ...(pageToken ? { page_token: pageToken } : {}),
+      });
+      seen.push(...page.memos.map((memo) => memo.id));
+      pageToken = page.nextPageToken;
+      if (!pageToken) break;
+    }
+    expect(seen).toEqual(expected.map((memo) => memo.id));
+    expect(new Set(seen).size).toBe(seen.length);
+  });
+
+  it("honours a tag filter inside every branch", async () => {
+    const tagged = await createMemo(db, member, {
+      content: "team tagged #团队",
+      visibility: "protected",
+      source: "web",
+    });
+    const page = await listMemosForViewer(db, owner, {
+      page_size: 100,
+      order_by: "created_at desc",
+      include_deleted: false,
+      tag: "团队",
+    });
+    const ids = page.memos.map((memo) => memo.id);
+    expect(ids).toContain(tagged.id);
+    expect(ids.every((id) => id === tagged.id)).toBe(true);
   });
 });
 

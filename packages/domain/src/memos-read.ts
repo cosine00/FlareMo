@@ -20,6 +20,7 @@ import {
   type SQL,
   sql,
 } from "drizzle-orm";
+import { union } from "drizzle-orm/sqlite-core";
 import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import { NotFoundError, ValidationError } from "./errors";
 import { compileMemoFilter } from "./memo-filter";
@@ -43,6 +44,7 @@ import {
 import { normalizeMemoTags } from "./tags";
 import {
   authorScope,
+  memoReadBranches,
   memoReadScope,
   scopedReadScope,
   spaceScope,
@@ -245,49 +247,51 @@ export async function listMemosForViewer(
     }
   }
 
-  // An active member's read scope is `own OR public`. An OR cannot be served
-  // by one ordered index: the planner reads both index ranges and then sorts
-  // every candidate, so a 21-row page on a 1.2k-memo instance read ~3.5k rows.
-  // Splitting it into two already-ordered branches and merging them keeps the
-  // page index-shaped. UNION (not UNION ALL) is required: a member's own
-  // public memos match both branches and must not be returned twice. Each
-  // branch is limited to the page window, and the merge of two individually
-  // sorted prefixes is exactly the sorted prefix of the union, so ordering,
-  // cursoring and lookahead behave as they did for the single statement.
+  // An active member's read scope is an OR of independent branches: their own
+  // rows, everyone's public rows, and the team's rows when they belong to one.
+  // As a single OR the planner reads every matching row and sorts it in a temp
+  // b-tree, so a 21-row page on a 1.2k-memo instance read ~2.8k rows. Run as
+  // one ordered, limited query per branch and merged with UNION, each branch
+  // walks an index that already repeats the timeline order and stops at the
+  // page window.
   //
-  // Team scopes add a third clause this split does not model, and JS-scanned
-  // filters carry a per-statement `scanLimit` window, so both keep the
-  // single-statement path.
-  const canSplitScope =
-    user?.status === "active" && !user.teamOrganizationId && !jsScan;
+  // The merge is still the sorted prefix of the union: a row in the true top-k
+  // must sit inside the top-k of at least one branch it belongs to, so `k`
+  // rows per branch already contain it. UNION (not UNION ALL) drops the
+  // duplicates a member's own public or team rows would otherwise produce.
+  //
+  // The branches come from `memoReadBranches`, so this split cannot drift from
+  // the read boundary. JS-scanned filters carry a per-statement `scanLimit`
+  // window and keep the single-statement path.
+  const readBranches =
+    user?.status === "active" && !jsScan ? memoReadBranches(user) : null;
   let candidates: MemoRow[];
-  if (canSplitScope && user) {
+  if (readBranches) {
     const branchLimit = query.page_size + 1;
     const sharedFilters = filters.filter(Boolean);
-    const ownPage = db
-      .select()
-      .from(memos)
-      .where(and(eq(memos.userId, user.id), ...sharedFilters))
-      .orderBy(...orderBy)
-      .limit(branchLimit)
-      .as("own_page");
-    const publicPage = db
-      .select()
-      .from(memos)
-      .where(
-        and(
-          eq(memos.visibility, "public"),
-          eq(memos.status, "normal"),
-          ...sharedFilters,
-        ),
-      )
-      .orderBy(...orderBy)
-      .limit(branchLimit)
-      .as("public_page");
-    candidates = await db
-      .select()
-      .from(ownPage)
-      .union(db.select().from(publicPage))
+    // Each branch has to sit inside a subquery: a compound arm cannot carry
+    // its own LIMIT, so a bare `select … limit ? union select … limit ?` is a
+    // syntax error. Wrapping keeps every branch bounded to the page window,
+    // and the trailing ORDER BY only re-sorts the merged prefixes.
+    const branchQuery = (branch: SQL, index: number) =>
+      db.select().from(
+        db
+          .select()
+          .from(memos)
+          .where(and(branch, ...sharedFilters))
+          .orderBy(...orderBy)
+          .limit(branchLimit)
+          .as(`branch_${index}`),
+      );
+    const [ownBranch, sharedBranch, teamBranch] = readBranches;
+    const merged = teamBranch
+      ? union(
+          branchQuery(ownBranch, 0),
+          branchQuery(sharedBranch, 1),
+          branchQuery(teamBranch, 2),
+        )
+      : union(branchQuery(ownBranch, 0), branchQuery(sharedBranch, 1));
+    candidates = await merged
       .orderBy(
         sql`pinned ${sql.raw(direction)}, ${sql.raw(orderColumnName)} ${sql.raw(direction)}, id ${sql.raw(direction)}`,
       )

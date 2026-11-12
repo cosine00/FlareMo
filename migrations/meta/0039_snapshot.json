@@ -3593,6 +3593,16 @@
             "id"
           ],
           "isUnique": false
+        },
+        "memos_team_pinned_created_id_idx": {
+          "name": "memos_team_pinned_created_id_idx",
+          "columns": [
+            "team_id",
+            "pinned",
+            "created_at",
+            "id"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {

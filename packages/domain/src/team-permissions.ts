@@ -83,6 +83,46 @@ export function authorScope(
   return eq(memos.userId, user.id);
 }
 
+/** The anonymous read boundary: normal public rows only. */
+function anonymousReadClause(): SQL {
+  return (
+    and(eq(memos.visibility, "public"), eq(memos.status, "normal")) ??
+    sql`0 = 1`
+  );
+}
+
+/**
+ * The read boundary of an active member, one SQL predicate per disjoint-ish
+ * branch. Callers that merge branches with UNION use this; the boundary itself
+ * stays the single source of truth so a split query cannot drift from
+ * `memoReadScope`.
+ *
+ * The tuple is positional: own rows, public rows, then the team rows when the
+ * member belongs to a team. Branches may overlap — a member's own public memo
+ * matches both the first and the second — so a consumer must dedupe (UNION,
+ * not UNION ALL).
+ */
+export function memoReadBranches(user: TeamViewer): [SQL, SQL, SQL?] {
+  const own = eq(memos.userId, user.id);
+  const shared = anonymousReadClause();
+  const orgId = user.teamOrganizationId ?? null;
+
+  if (!orgId) return [own, shared];
+
+  const team = isTeamAdmin(user)
+    ? (and(
+        eq(memos.teamId, orgId),
+        inArray(memos.visibility, ["protected", "public"]),
+      ) ?? sql`0 = 1`)
+    : (and(
+        eq(memos.teamId, orgId),
+        eq(memos.visibility, "protected"),
+        eq(memos.status, "normal"),
+      ) ?? sql`0 = 1`);
+
+  return [own, shared, team];
+}
+
 /**
  * SQL authorization boundary for memo list and search queries.
  *
@@ -94,38 +134,10 @@ export function authorScope(
  */
 export function memoReadScope(user: TeamViewer | null): SQL {
   if (user?.status !== "active") {
-    return user
-      ? sql`0 = 1`
-      : (and(eq(memos.visibility, "public"), eq(memos.status, "normal")) ??
-          sql`0 = 1`);
+    return user ? sql`0 = 1` : anonymousReadClause();
   }
 
-  const orgId = user.teamOrganizationId ?? null;
-  const clauses = [
-    eq(memos.userId, user.id),
-    and(eq(memos.visibility, "public"), eq(memos.status, "normal")),
-  ];
-
-  if (orgId) {
-    if (isTeamAdmin(user)) {
-      clauses.push(
-        and(
-          eq(memos.teamId, orgId),
-          inArray(memos.visibility, ["protected", "public"]),
-        ),
-      );
-    } else {
-      clauses.push(
-        and(
-          eq(memos.teamId, orgId),
-          eq(memos.visibility, "protected"),
-          eq(memos.status, "normal"),
-        ),
-      );
-    }
-  }
-
-  return or(...clauses) ?? sql`0 = 1`;
+  return or(...memoReadBranches(user)) ?? sql`0 = 1`;
 }
 
 /**
