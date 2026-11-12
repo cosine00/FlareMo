@@ -499,8 +499,10 @@ export function createFlareMoWorker(
             logBackgroundTaskFailure("embedding_outbox", error),
           ),
         );
-        // The blog re-reads the complete public feed; no Memo content or
-        // attachment URL is sent to GitHub.
+        // The dispatch carries only the memo id and the action; the blog pulls
+        // that one memo with its own credentials. No Memo content or attachment
+        // URL is ever sent to GitHub, and an id-less event falls back to a full
+        // pull instead of being skipped.
         ctx?.waitUntil(
           dispatchMemoBlogSync(env, request, response).catch((error) =>
             logBackgroundTaskFailure("memo_blog_sync", error),
