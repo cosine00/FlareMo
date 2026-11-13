@@ -15,6 +15,142 @@ import {
 
 export type InsightSource = { id: string; content: string; createTime: string };
 
+// Thinking models bill the hidden reasoning trace against `max_tokens`, so a
+// small ceiling lets the model "think itself empty": the provider answers 200
+// with an empty `content` and `finish_reason: "length"`. 3_000 was too tight
+// for a 120k-character prompt, so the default now leaves room for both the
+// reasoning trace and the report.
+export const DEFAULT_AI_OUTPUT_TOKENS = 8_192;
+const MIN_AI_OUTPUT_TOKENS = 4_096;
+const MAX_AI_OUTPUT_TOKENS = 131_072;
+// Escalating past this stops being a reliability fix and starts being an
+// expensive way to paper over an over-long prompt.
+const MAX_ESCALATED_OUTPUT_TOKENS = 32_768;
+// Escalations are full regenerations, so a slow provider could otherwise keep
+// the browser waiting for several minutes. Past this window the caller gets the
+// diagnostic error instead of a third attempt.
+const ESCALATION_WINDOW_MS = 180_000;
+
+export type InsightMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type InsightCompletion = {
+  content: string;
+  finishReason?: string;
+  reasoningTokens: number;
+};
+
+type InsightPayload = {
+  choices?: Array<{
+    finish_reason?: string;
+    message?: { content?: string | null; reasoning_content?: string | null };
+  }>;
+  usage?: {
+    completion_tokens?: number;
+    completion_tokens_details?: { reasoning_tokens?: number };
+  };
+};
+
+export type InsightRequest = (
+  messages: InsightMessage[],
+  maxTokens: number,
+) => Promise<InsightCompletion>;
+
+export function resolveInsightOutputTokens(env: FlareMoEnv) {
+  const configured = Number.parseInt(env.FLAREMO_AI_MAX_TOKENS ?? "", 10);
+  if (!Number.isFinite(configured) || configured <= 0) {
+    return DEFAULT_AI_OUTPUT_TOKENS;
+  }
+  return Math.min(
+    Math.max(configured, MIN_AI_OUTPUT_TOKENS),
+    MAX_AI_OUTPUT_TOKENS,
+  );
+}
+
+export function readInsightCompletion(
+  payload: InsightPayload,
+): InsightCompletion {
+  const choice = payload.choices?.[0];
+  return {
+    content: choice?.message?.content?.trim() ?? "",
+    finishReason: choice?.finish_reason,
+    reasoningTokens:
+      payload.usage?.completion_tokens_details?.reasoning_tokens ?? 0,
+  };
+}
+
+// The fingerprint of a starved generation: no visible text, and either the
+// provider admits the ceiling was hit or the reasoning trace alone consumed
+// nearly the entire budget.
+export function reasoningStarved(
+  completion: InsightCompletion,
+  maxTokens: number,
+): boolean {
+  if (completion.content) return false;
+  if (completion.finishReason === "length") return true;
+  return (
+    completion.reasoningTokens > 0 &&
+    completion.reasoningTokens >= maxTokens * 0.9
+  );
+}
+
+export function emptyInsightResponse(
+  completion: InsightCompletion,
+  maxTokens: number,
+) {
+  const detail = [
+    completion.finishReason ? `finish_reason=${completion.finishReason}` : null,
+    completion.reasoningTokens > 0
+      ? `reasoning_tokens=${completion.reasoningTokens}`
+      : null,
+    `max_tokens=${maxTokens}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return new DomainError(
+    `AI provider returned an empty response (${detail}). The model likely spent the whole output budget on reasoning; shorten the perspective, send fewer materials, or raise FLAREMO_AI_MAX_TOKENS.`,
+    502,
+  );
+}
+
+// Retries with a larger ceiling when the first attempt was truncated inside
+// the reasoning trace. Bounded to two escalations so a pathological prompt
+// cannot turn into an open-ended, expensive generation loop.
+export async function completeInsightWithinBudget(
+  send: InsightRequest,
+  messages: InsightMessage[],
+  initialBudget: number,
+) {
+  let budget = initialBudget;
+  let current = messages;
+  const startedAt = Date.now();
+  let completion = await send(current, budget);
+  for (
+    let escalation = 0;
+    escalation < 2 &&
+    reasoningStarved(completion, budget) &&
+    Date.now() - startedAt < ESCALATION_WINDOW_MS;
+    escalation += 1
+  ) {
+    budget = Math.min(budget * 2, MAX_ESCALATED_OUTPUT_TOKENS);
+    current = [
+      {
+        role: "system",
+        content: `${current[0]?.content ?? ""}\n\n补充要求：上一轮把输出额度消耗在思考上，正文没有产出。这一轮请缩短思考，把额度留给最终报告，直接完整写出结论。`,
+      },
+      ...current.slice(1),
+    ];
+    console.warn(
+      "[ai-insight] output budget exhausted by reasoning, retrying",
+      JSON.stringify({ budget, reasoningTokens: completion.reasoningTokens }),
+    );
+    completion = await send(current, budget);
+  }
+  return { completion, messages: current, budget };
+}
+
 const aiCredentialsSchema = z
   .object({ apiKey: z.string().trim().min(1).max(1024) })
   .strict();
@@ -118,8 +254,10 @@ export async function generateMemoInsight(
     "你是个人记录的洞察伙伴。只依据提供的记录工作，不要逐条复述或泛泛总结。先给出一个简短标题，再提出 2 到 4 个有证据的发现，识别核心主题、隐藏联系或思维盲点，最后留下一个值得继续思考的问题或克制的下一步。不要诊断、说教、套话或虚构。使用与记录相同的主要语言，每个关键判断都用 [1] 这样的编号引用依据。必须完整写完每个句子和章节，不要突然中断。输出简洁 Markdown。";
   const userPrompt = `${perspective?.trim() ? `视角：${perspective.trim()}\n\n` : ""}${materials}`;
   const request = async (
-    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
-  ) => {
+    messages: InsightMessage[],
+    maxTokens: number,
+  ): Promise<InsightCompletion> => {
+    const reasoningEffort = env.FLAREMO_AI_REASONING_EFFORT?.trim();
     for (let attempt = 0; attempt < 3; attempt += 1) {
       let response: Response;
       try {
@@ -133,7 +271,11 @@ export async function generateMemoInsight(
           body: JSON.stringify({
             model,
             temperature: 0.5,
-            max_tokens: 3_000,
+            max_tokens: maxTokens,
+            // Only sent when configured: not every OpenAI-compatible gateway
+            // accepts the field, and the default (provider-side thinking
+            // level) is the safest fallback.
+            ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
             messages,
           }),
         });
@@ -145,12 +287,7 @@ export async function generateMemoInsight(
         );
       }
       if (response.ok) {
-        return (await response.json()) as {
-          choices?: Array<{
-            finish_reason?: string;
-            message?: { content?: string };
-          }>;
-        };
+        return readInsightCompletion((await response.json()) as InsightPayload);
       }
       const detail = (await response.text()).slice(0, 500);
       if ([429, 500, 502, 503, 504].includes(response.status) && attempt < 2) {
@@ -166,19 +303,19 @@ export async function generateMemoInsight(
     }
     throw new DomainError("AI provider is temporarily unavailable.", 503);
   };
-  const messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }> = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ];
-  const first = await request(messages);
-  let content = first.choices?.[0]?.message?.content?.trim();
+  const first = await completeInsightWithinBudget(
+    request,
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    resolveInsightOutputTokens(env),
+  );
+  let content = first.completion.content;
   if (!content) {
-    throw new DomainError("AI provider returned an empty response", 502);
+    throw emptyInsightResponse(first.completion, first.budget);
   }
-  let finishReason = first.choices?.[0]?.finish_reason;
+  let finishReason = first.completion.finishReason;
   // A provider may stop at its output-token ceiling mid-sentence. Continue at
   // most twice, keeping the same source numbering and avoiding an endless or
   // unexpectedly expensive generation loop.
@@ -187,19 +324,21 @@ export async function generateMemoInsight(
     finishReason === "length" && attempt < 2;
     attempt += 1
   ) {
-    const continuation = await request([
-      ...messages,
-      { role: "assistant", content },
-      {
-        role: "user",
-        content:
-          "上一段因为长度限制被截断。请从被截断的位置直接续写，不要重复已有内容，并完整结束报告。",
-      },
-    ]);
-    const next = continuation.choices?.[0]?.message?.content;
-    if (!next?.trim()) break;
-    content += next;
-    finishReason = continuation.choices?.[0]?.finish_reason;
+    const continuation = await request(
+      [
+        ...first.messages,
+        { role: "assistant", content },
+        {
+          role: "user",
+          content:
+            "上一段因为长度限制被截断。请从被截断的位置直接续写，不要重复已有内容，并完整结束报告。",
+        },
+      ],
+      first.budget,
+    );
+    if (!continuation.content) break;
+    content += continuation.content;
+    finishReason = continuation.finishReason;
   }
   const sourceIds = sources.map((source) => source.id.replace(/^memos\//, ""));
   content = content.replace(

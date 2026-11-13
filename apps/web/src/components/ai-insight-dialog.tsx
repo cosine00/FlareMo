@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n";
 import { errorMessage } from "@/lib/error";
 import { stripResourceName } from "@/lib/utils";
@@ -63,7 +63,8 @@ export function AiInsightDialog({
               {t("ai.insight.related")}
             </Button>
           </div>
-          <Input
+          <Textarea
+            className="max-h-48 min-h-20 leading-6"
             maxLength={500}
             placeholder={t("ai.insight.perspective")}
             value={perspective}

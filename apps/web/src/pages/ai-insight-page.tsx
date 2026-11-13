@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { type TranslationKey, useI18n } from "@/i18n";
@@ -370,14 +371,30 @@ export function AiInsightPage() {
                 ))}
               </div>
               {perspective === "custom" && (
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,12rem)_1fr_auto]">
-                  <Input
-                    maxLength={40}
-                    placeholder={t("ai.insight.customNamePlaceholder")}
-                    value={customName}
-                    onChange={(event) => setCustomName(event.target.value)}
-                  />
-                  <Input
+                <div className="flex flex-col gap-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Input
+                      className="sm:max-w-56"
+                      maxLength={40}
+                      placeholder={t("ai.insight.customNamePlaceholder")}
+                      value={customName}
+                      onChange={(event) => setCustomName(event.target.value)}
+                    />
+                    <Button
+                      className="sm:ml-auto"
+                      variant="outline"
+                      disabled={
+                        !customName.trim() ||
+                        !customPerspective.trim() ||
+                        savePresetMutation.isPending
+                      }
+                      onClick={() => savePresetMutation.mutate()}
+                    >
+                      <SaveIcon /> {t("ai.insight.savePreset")}
+                    </Button>
+                  </div>
+                  <Textarea
+                    className="max-h-80 min-h-32 leading-6"
                     maxLength={1_000}
                     placeholder={t("ai.insight.customPlaceholder")}
                     value={customPerspective}
@@ -386,17 +403,9 @@ export function AiInsightPage() {
                       mutation.reset();
                     }}
                   />
-                  <Button
-                    variant="outline"
-                    disabled={
-                      !customName.trim() ||
-                      !customPerspective.trim() ||
-                      savePresetMutation.isPending
-                    }
-                    onClick={() => savePresetMutation.mutate()}
-                  >
-                    <SaveIcon /> {t("ai.insight.savePreset")}
-                  </Button>
+                  <p className="text-right text-xs tabular-nums text-muted-foreground">
+                    {customPerspective.length} / 1000
+                  </p>
                 </div>
               )}
             </div>

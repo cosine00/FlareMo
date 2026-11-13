@@ -122,6 +122,17 @@ export type FlareMoEnv = Env & {
   // is stored per owner in D1 settings.
   DEEPSEEK_API_KEY?: string;
   FLAREMO_AI_BASE_URL?: string;
+  // Output ceiling for one insight request. Thinking models spend this budget
+  // on the hidden reasoning trace *before* writing the answer, so a tight
+  // ceiling yields an empty 200 response. Unset = 8192; clamped to 4096..131072.
+  // The worker still retries with double the budget (max 32768) when the
+  // reasoning trace starves the answer.
+  FLAREMO_AI_MAX_TOKENS?: string;
+  // Optional DeepSeek `reasoning_effort` (none|low|high|max) forwarded verbatim.
+  // Unset = send nothing and keep the model/provider default. "low" is the
+  // useful lever for insight writing: shorter thinking, far fewer empty
+  // responses, lower cost.
+  FLAREMO_AI_REASONING_EFFORT?: string;
   // Optional Cloudflare account analytics for the owner usage panel (see
   // src/cf-analytics.ts). Written by `pnpm setup:usage`; token needs only the
   // "Account Analytics: Read" permission. Queries are filtered down to this
