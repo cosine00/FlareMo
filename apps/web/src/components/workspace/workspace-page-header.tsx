@@ -35,7 +35,10 @@ export function WorkspacePageHeader({
   return (
     <header
       className={cn(
-        "z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200",
+        // Kept in step with `WorkspaceHeader`: the document is the scroll
+        // container, so page bars hold themselves at the top of the viewport
+        // instead of scrolling away with the content.
+        "sticky top-0 z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200",
         isScrolled ? "border-border shadow-xs" : "border-transparent",
       )}
     >

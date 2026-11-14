@@ -1,4 +1,4 @@
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   CircleAlertIcon,
   InboxIcon,
@@ -171,14 +171,13 @@ function VirtualizedCards({
   searchQuery,
   sharesByMemo,
 }: VirtualizedCardsProps) {
-  // The timeline scrolls with the page's <main>, not with this element, so the
-  // virtualizer is told to read that scroller. Both the scroller and the list's
-  // offset inside it are only known after mount, so they are re-read on a
-  // layout effect — a value captured during the first render would be null and
-  // the list would measure against the wrong origin forever. Re-running when
-  // the list length changes keeps the margin honest as the page above it
-  // settles (banner appearing, skeleton swapping out).
-  const [scroller, setScroller] = useState<HTMLElement | null>(null);
+  // The timeline scrolls with the document — the shell deliberately has no
+  // inner scroll pane, because a document stuck at scrollTop 0 stops mobile
+  // browsers from retracting their address bar. So the virtualizer reads
+  // `window` and measures this list's offset from the top of the document;
+  // the offset is only known after mount (search box, chips and the "on this
+  // day" banner sit above it), hence the layout effect. Re-running when the
+  // list length changes keeps the margin honest as the page above it settles.
   const [scrollMargin, setScrollMargin] = useState(0);
   // Indexes of cards with an open editor. Computed once per memo/edit change
   // rather than inside the scroll-time range extractor.
@@ -193,24 +192,12 @@ function VirtualizedCards({
   // biome-ignore lint/correctness/useExhaustiveDependencies: listRef is a ref (its identity never changes) and `memos.length` is the deliberate re-measure trigger, not a value the effect reads.
   useLayoutEffect(() => {
     const element = listRef.current;
-    const parent =
-      element?.closest<HTMLElement>("[data-timeline-scroller]") ??
-      element?.closest<HTMLElement>("main") ??
-      null;
-    setScroller(parent);
-    if (element && parent) {
-      // Distance from the scroll container's content origin to this list. The
-      // timeline renders a search box, chips and the "on this day" banner above
-      // it, so a flat zero would offset every card by that height.
-      const elementRect = element.getBoundingClientRect();
-      const parentRect = parent.getBoundingClientRect();
-      setScrollMargin(elementRect.top - parentRect.top + parent.scrollTop);
-    }
+    if (!element) return;
+    setScrollMargin(element.getBoundingClientRect().top + window.scrollY);
   }, [memos.length]);
 
-  const virtualizer = useVirtualizer({
+  const virtualizer = useWindowVirtualizer({
     count: memos.length,
-    getScrollElement: () => scroller,
     estimateSize: () => 150,
     getItemKey: (index) => memos[index]?.name ?? index,
     overscan: VIRTUAL_OVERSCAN,

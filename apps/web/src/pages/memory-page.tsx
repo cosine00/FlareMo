@@ -114,10 +114,10 @@ export function MemoryPage() {
           isScrolled={isScrolled}
         />
       )}
-      onScroll={(event) => {
+      onScroll={(scrollTop) => {
         // Guard the same-value case: a bare setState here re-rendered the
         // whole memory page on every scroll event, not just at the threshold.
-        const next = event.currentTarget.scrollTop > 4;
+        const next = scrollTop > 4;
         setIsScrolled((prev) => (prev === next ? prev : next));
       }}
     >

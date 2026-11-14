@@ -5,9 +5,10 @@ import {
   type ReactNode,
   type RefObject,
   Suspense,
-  type UIEvent,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -61,9 +62,10 @@ export type WorkspaceHeaderRenderProps = {
 export type WorkspaceLayoutProps = {
   header: (props: WorkspaceHeaderRenderProps) => ReactNode;
   children: ReactNode;
-  /** The scroll container, not the content column, so `scrollTo` works. */
+  /** The content column, kept for pages that scroll it programmatically. */
   mainRef?: RefObject<HTMLDivElement | null>;
-  onScroll?: (event: UIEvent<HTMLDivElement>) => void;
+  /** Current vertical offset of the document scroller, in px. */
+  onScroll?: (scrollTop: number) => void;
   /** Content column width in px; the sidebar column is added on top of it. */
   contentMaxWidth?: number;
 };
@@ -81,6 +83,23 @@ export function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const navigate = useNavigate();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  // Pages re-create `onScroll` inline on every render, so hold the latest one
+  // in a ref: the listener below is registered once instead of being torn
+  // down and re-attached on each parent render (which, on a page whose scroll
+  // handler sets state, is every scroll frame).
+  const onScrollRef = useRef(onScroll);
+  onScrollRef.current = onScroll;
+
+  // The document is the scroll container (see the shell markup below), so the
+  // offset a page cares about lives on `window`. Reporting it here keeps one
+  // source of truth for every shell page instead of each of them attaching
+  // its own listener.
+  useEffect(() => {
+    const report = () => onScrollRef.current?.(window.scrollY);
+    report();
+    window.addEventListener("scroll", report, { passive: true });
+    return () => window.removeEventListener("scroll", report);
+  }, []);
   // One dialog for every entry point; the section only decides where it opens.
   const [settingsSection, setSettingsSection] =
     useState<SettingsSection | null>(null);
@@ -178,19 +197,18 @@ export function WorkspaceLayout({
   ]);
 
   return (
-    <div className="h-svh overflow-hidden bg-background">
-      {/* Sidebar + content, centered as one composition: the sidebar holds the
-          frame's left edge (see its `shellWidth`), the content column keeps its
-          measure right beside it, and the scroll container spans the rest of
-          the window so its scrollbar sits at the window's right edge — the same
-          shell the timeline uses. */}
-      <div className="flex h-full w-full">
+    <div className="min-h-svh w-full bg-background">
+      {/* Same shell as the timeline, and the same reason for it: the document
+          scrolls so mobile browsers retract their address bar and toolbar.
+          A 100svh frame with an inner scroll pane keeps the document at
+          scrollTop 0, which pins the chrome on screen forever. */}
+      <div className="flex min-h-svh w-full min-w-0">
         <WorkspaceSidebar
           collapsed={sidebarCollapsed}
           explorer={sidebarContent}
           shellWidth={contentMaxWidth + WORKSPACE_SIDEBAR_WIDTH}
         />
-        <div className="flex h-full min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           {header({
             sidebarCollapsed,
             toggleSidebarCollapsed,
@@ -198,12 +216,7 @@ export function WorkspaceLayout({
             setMobileSheetOpen,
             explorer: sidebarContent,
           })}
-          <div
-            className="min-h-0 flex-1 overflow-y-auto"
-            data-timeline-scroller=""
-            ref={mainRef}
-            onScroll={onScroll}
-          >
+          <div ref={mainRef} className="min-w-0 flex-1">
             <main
               className="w-full px-5 pt-1 pb-8 lg:px-3"
               style={{ maxWidth: contentMaxWidth }}

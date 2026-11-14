@@ -79,7 +79,10 @@ export function WorkspaceHeader({
   return (
     <header
       className={cn(
-        "z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200",
+        // `sticky`, not a plain flex child: the document is the scroll
+        // container now, so the bar has to hold itself at the top of the
+        // viewport while the timeline scrolls under it.
+        "sticky top-0 z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200",
         isTimelineScrolled ? "border-border shadow-xs" : "border-transparent",
       )}
     >

@@ -6,7 +6,15 @@ import {
   EyeIcon,
   SparklesIcon,
 } from "lucide-react";
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { MemoVisibility, Share } from "@/api";
 import { MemoList } from "@/components/memo-list";
 import { SpotlightSearch } from "@/components/spotlight-search";
@@ -75,7 +83,6 @@ export function FlareMoApp() {
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
   );
   const mobileSearchRef = useRef<HTMLInputElement>(null);
-  const mainRef = useRef<HTMLDivElement | null>(null);
   const [layout, setLayoutState] = useState<TimelineLayout>(readTimelineLayout);
   const [imageMode, setImageModeState] = useState<"full" | "icon">(() => {
     try {
@@ -106,8 +113,28 @@ export function FlareMoApp() {
     useState<SettingsSection | null>(null);
 
   const scrollToTop = useCallback(() => {
-    mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  // The document is the scroll container (see the shell below), so the scroll
+  // state is read from `window`. While the timeline scrolled an inner element
+  // the document stayed at scrollTop 0 for the app's whole lifetime — and a
+  // document that never scrolls is exactly what stops mobile browsers from
+  // collapsing their address bar and toolbar, since that collapse is driven by
+  // the root scroller moving, not by any nested one.
+  const handleScrollTop = useCallback((top: number) => {
+    const scrolled = top > 4;
+    setIsTimelineScrolled((prev) => (prev === scrolled ? prev : scrolled));
+    const showTop = top > 400;
+    setShowScrollToTop((prev) => (prev === showTop ? prev : showTop));
+  }, []);
+
+  useEffect(() => {
+    const onWindowScroll = () => handleScrollTop(window.scrollY);
+    onWindowScroll();
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onWindowScroll);
+  }, [handleScrollTop]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
@@ -290,17 +317,23 @@ export function FlareMoApp() {
   );
 
   return (
-    <div className="h-svh overflow-hidden bg-background">
-      {/* Page-thirds shell: the explorer holds a third of the window, the
-          timeline the other two. The scroll container spans the whole right
-          column so its scrollbar sits at the window edge, while `main` keeps
-          the content at a readable measure inside it. */}
-      <div className="flex h-full w-full">
+    <div className="min-h-svh w-full bg-background">
+      {/* The document itself scrolls — deliberately. A mobile browser only
+          retracts its address bar and toolbar while the *root* scroller moves;
+          an app shell pinned to 100svh with an inner `overflow-y: auto` pane
+          (what this used to be) keeps the document at scrollTop 0 for its
+          whole lifetime, so the chrome never collapses and the page reads as
+          permanently "letterboxed". `/explore` already behaved correctly for
+          exactly this reason: it has no shell and scrolls the page. Making
+          every shell page match it is the whole point of this layout.
+          `min-h-svh` (not `h-svh`) is what allows the document to grow; a
+          fixed height would clip the content instead of scrolling it. */}
+      <div className="flex min-h-svh w-full min-w-0">
         <WorkspaceSidebar
           collapsed={sidebarCollapsed}
           explorer={sidebarContent}
         />
-        <div className="flex h-full min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <WorkspaceHeader
             activeQuery={dayFilter ? "" : query}
             explorer={sidebarContent}
@@ -321,27 +354,14 @@ export function FlareMoApp() {
             toggleSidebarCollapsed={toggleSidebarCollapsed}
             view={view}
           />
-          <div
-            ref={mainRef}
-            className="min-h-0 flex-1 overflow-y-auto"
-            data-timeline-scroller=""
-            onScroll={(event) => {
-              const top = event.currentTarget.scrollTop;
-              const scrolled = top > 4;
-              setIsTimelineScrolled((prev) =>
-                prev === scrolled ? prev : scrolled,
-              );
-              const showTop = top > 400;
-              setShowScrollToTop((prev) => (prev === showTop ? prev : showTop));
-            }}
-          >
+          <div className="min-w-0 flex-1">
             <main
               className="w-full px-5 pt-1 pb-8 lg:px-6"
               // The reading measure is the shell's original one (640), and the
               // column hugs the sidebar the way the old centered shell sat:
-              // explorer 312 + notes 640, side by side. The scroller still
-              // spans the window so its scrollbar stays at the right edge —
-              // the leftover width simply collects on the right. The rail eats
+              // explorer 312 + notes 640, side by side. The document scrolls,
+              // so the scrollbar sits at the window's right edge and the
+              // leftover width simply collects on the right. The rail eats
               // 28px of the timeline's padding, which is what it adds back.
               style={{ maxWidth: layout === "timeline" ? 672 : 640 }}
             >

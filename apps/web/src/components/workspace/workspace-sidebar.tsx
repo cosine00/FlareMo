@@ -192,7 +192,11 @@ export function WorkspaceSidebar({
     <aside
       aria-hidden={collapsed}
       className={cn(
-        "hidden lg:block h-full shrink-0 overflow-hidden motion-safe:transition-[width,opacity] motion-safe:duration-250 motion-safe:ease-signal",
+        // The document scrolls, so the rail pins itself to the viewport
+        // instead of relying on a shell that used to be exactly one screen
+        // tall: `sticky` + `h-svh` + `self-start` keeps it full-height and in
+        // place while the timeline beside it scrolls away.
+        "hidden lg:block lg:sticky lg:top-0 lg:h-svh lg:self-start shrink-0 overflow-hidden motion-safe:transition-[width,opacity] motion-safe:duration-250 motion-safe:ease-signal",
         collapsed
           ? "w-0 opacity-0 pointer-events-none"
           : "w-[312px] opacity-100",
@@ -208,7 +212,7 @@ export function WorkspaceSidebar({
             }
       }
     >
-      <div className="no-scrollbar h-full w-[312px] overflow-y-auto border-r bg-background">
+      <div className="no-scrollbar h-svh w-[312px] overflow-y-auto border-r bg-background">
         <WorkspaceExplorerPanel {...explorer} showCollapse />
       </div>
     </aside>
