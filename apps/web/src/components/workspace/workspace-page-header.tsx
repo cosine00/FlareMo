@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import type { WorkspaceSidebarContent } from "@/components/workspace/workspace-sidebar";
 import { WorkspaceMobileSidebar } from "@/components/workspace/workspace-sidebar";
+import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -31,14 +32,17 @@ export function WorkspacePageHeader({
   isScrolled?: boolean;
 }) {
   const { t } = useI18n();
+  const isHidden = useHideOnScroll();
 
   return (
     <header
       className={cn(
         // Kept in step with `WorkspaceHeader`: the document is the scroll
         // container, so page bars hold themselves at the top of the viewport
-        // instead of scrolling away with the content.
-        "sticky top-0 z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200",
+        // instead of scrolling away with the content — and, on phones, get out
+        // of the way as soon as the reader starts scrolling down.
+        "sticky top-0 z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[translate,border-color,box-shadow] motion-safe:duration-200 motion-safe:ease-out",
+        isHidden && "max-lg:-translate-y-full",
         isScrolled ? "border-border shadow-xs" : "border-transparent",
       )}
     >

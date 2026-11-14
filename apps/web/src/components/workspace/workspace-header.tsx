@@ -14,6 +14,7 @@ import {
   WorkspaceMobileSidebar,
   type WorkspaceSidebarContent,
 } from "@/components/workspace/workspace-sidebar";
+import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n";
 import type { TranslationKey } from "@/i18n/key";
 import type { TimelineLayout } from "@/lib/timeline-layout";
@@ -75,6 +76,7 @@ export function WorkspaceHeader({
   view: ExplorerView;
 }) {
   const { t } = useI18n();
+  const isHidden = useHideOnScroll();
 
   return (
     <header
@@ -82,7 +84,14 @@ export function WorkspaceHeader({
         // `sticky`, not a plain flex child: the document is the scroll
         // container now, so the bar has to hold itself at the top of the
         // viewport while the timeline scrolls under it.
-        "sticky top-0 z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200",
+        "sticky top-0 z-20 shrink-0 border-b bg-background/90 backdrop-blur-md motion-safe:transition-[translate,border-color,box-shadow] motion-safe:duration-200 motion-safe:ease-out",
+        // Phones have one bar's worth of height to spare and no room for a
+        // permanently pinned header, so the bar tucks up while the reader
+        // scrolls down and drops back on the first upward flick. Desktop keeps
+        // it put: the sidebar already gives the eye a fixed anchor there.
+        // No `will-change` here on purpose — on iOS it has a history of making
+        // a sticky element jitter instead of smoothing it.
+        isHidden && "max-lg:-translate-y-full",
         isTimelineScrolled ? "border-border shadow-xs" : "border-transparent",
       )}
     >
