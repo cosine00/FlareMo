@@ -992,7 +992,12 @@ svg.lucide[stroke-width="2"] {
     @apply text-foreground;
     font-size: var(--reading-size);
     line-height: var(--reading-leading);
-    text-wrap: pretty;
+    /* `text-wrap: pretty` used to sit here to avoid a one- or two-character
+       last line. In CJK it buys that by pulling two or three characters off the
+       preceding line, which shows up as a notch at the right edge — readers
+       notice the gap far more than the orphan, and every line of Chinese text
+       is expected to reach the margin. Plain wrapping does exactly that. */
+    text-wrap: wrap;
     word-break: break-word;
   }
 
